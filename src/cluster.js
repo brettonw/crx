@@ -8,10 +8,6 @@ var Cluster = function () {
         Vector2d.xy(0.10, 0.00)
     ];
 
-    // how many polishing steps we want to take to allow the frame of reference
-    // to be stabilized after applying forces
-    _.subStepCount = 5;
-
     // incorporate the aggregate result of our particle cluster simulation to
     // show the larger object behavior. we include measuring velocities and
     // acceleration of the aggregate object
@@ -117,7 +113,7 @@ var Cluster = function () {
 
     // XXX SERIOUS ISSUE
     // forces and other accumulation operations (like thrust) need to be applied
-    // over the full timestep, not just over the sub steps - how to accomplish this...
+    // over the full timestep, not just over the first sub step - how to accomplish this...
 
     _.applyFunction = function (f) {
         f (this.particles[0]);
@@ -148,6 +144,13 @@ var Cluster = function () {
 
         return this;
     };
+
+    // how many polishing steps we want to take to allow the frame of reference
+    // to be stabilized after applying forces
+    var subStepCount = 3;
+    _.getSubStepCount = function () {
+        return subStepCount;
+    }
 
     _.update = function (deltaTime) {
         var scope = this;
@@ -187,16 +190,16 @@ var Cluster = function () {
             scope.particles[2].update(dT);
         }
 
-        var dT = deltaTime / this.subStepCount;
-        for (var i = 0; i < this.subStepCount; ++i) {
+        var dT = deltaTime / subStepCount;
+        for (var i = 0; i < subStepCount; ++i) {
             subStep(dT);
         }
+
+        // update the frame of reference
+        this.updateFrameOfReference();
     };
 
     _.paint = function () {
-        // update the frame of reference
-        this.updateFrameOfReference();
-
         // update the ghost
         this.svg.attr("transform", "translate(" + this.position.x + "," + this.position.y + ") rotate(" + (this.spinPosition * (180.0 / Math.PI)) + ", 0, 0)");
 

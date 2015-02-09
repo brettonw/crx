@@ -2,57 +2,42 @@ var Ship = function () {
     var _ = Object.create(Cluster);
 
     _.learn = function () {
-        var substepCount = Cluster.subStepCount;
-        Cluster.subStepCount = 20;
-
         this.reset (Vector2d.zero (), 0);
         var spinVelocity = this.spinVelocity;
         var accumulator = 0;
         var accumulatorCount = 0;
         var scope = this;
         var report = function () {
-            scope.update (deltaTime);
-            scope.updateFrameOfReference();
-            var spinAcceleration = Math.abs (scope.spinVelocity - spinVelocity) / deltaTime;
+            var stabilizationFrames = 5;
+            for (var i = 0; i < stabilizationFrames; ++i) {
+                scope.update(deltaTime);
+            }
+            var spinAcceleration = Math.abs(scope.spinVelocity - spinVelocity) / (deltaTime * stabilizationFrames);
             spinVelocity = scope.spinVelocity;
-            console.log ("Velocity: " + spinVelocity.toPrecision (5) + ", Spin Acceleration: " + spinAcceleration.toPrecision (5) + "/frame");
+            console.log ("Spin Velocity: " + spinVelocity.toPrecision (5) + ", Spin Acceleration: " + spinAcceleration.toPrecision (5) + "/sec");
             accumulator += spinAcceleration;
             ++accumulatorCount;
             return spinAcceleration;
         }
 
-        report ();
+        this.thrust (-1, 1);
+        report();
 
         this.thrust (-1, 1);
-        report ();
-        report ();
-        report ();
-        report ();
-
-        this.thrust (-1, 1);
-        report ();
-        report ();
-        report ();
-        report ();
+        report();
 
         this.thrust (1, -1);
-        report ();
-        report ();
-        report ();
-        report ();
+        report();
 
         this.spinAcceleration = accumulator / accumulatorCount;
         console.log ("Spin Acceleration: " + this.spinAcceleration);
-
-        Cluster.subStepCount = substepCount;
     }
 
     _.init = function (name, position, spinPosition) {
         // do the parental thing
         Object.getPrototypeOf(Ship).init.call(this, name, Vector2d.zero (), 0);
 
-        this.thrustRatio = 16.0;
-        this.rotateRatio = 5.0;
+        this.thrustRatio = 2.0;
 
         this.learn ();
         this.reset (position, spinPosition);
@@ -61,9 +46,13 @@ var Ship = function () {
     }
 
     _.thrust = function (left, right) {
+        // thrusts will be applied at the beginning of each time step, treated
+        // as a pulse value
+        var thrustScaling = this.thrustRatio * Cluster.getSubStepCount();
+
         var orientationVector = Vector2d.angle(this.spinPosition);
-        var leftThrustVector = orientationVector.scale(this.thrustRatio * left);
-        var rightThrustVector = orientationVector.scale(this.thrustRatio * right);
+        var leftThrustVector = orientationVector.scale(thrustScaling * left);
+        var rightThrustVector = orientationVector.scale(thrustScaling * right);
 
         // engines are assumed to be (left) particle 0, and (right) particle 1
         this.particles[0].applyAcceleration(leftThrustVector);
