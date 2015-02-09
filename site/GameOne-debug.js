@@ -569,7 +569,7 @@ var Ship = function () {
     }
 
     _.go = function (targetVelocity) {
-        shipGo (this, targetVelocity, 0.0, 1.0, 2.0);
+        shipGo (this, targetVelocity, 0.0, 1.0, 5.0);
     }
 
     _.goTo = function (targetPoint) {
