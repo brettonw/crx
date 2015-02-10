@@ -1,41 +1,12 @@
 var Ship = function () {
     var _ = Object.create(Cluster);
 
-    _.learn = function () {
-        this.reset (Vector2d.zero (), 0);
-        var spinVelocity = this.spinVelocity;
-        var accumulator = 0;
-        var accumulatorCount = 0;
-        var scope = this;
-        var report = function () {
-            var stabilizationFrames = 5;
-            for (var i = 0; i < stabilizationFrames; ++i) {
-                scope.update(deltaTime);
-            }
-            var spinAcceleration = Math.abs(scope.spinVelocity - spinVelocity) / (deltaTime * stabilizationFrames);
-            spinVelocity = scope.spinVelocity;
-            console.log ("Spin Velocity: " + spinVelocity.toPrecision (5) + ", Spin Acceleration: " + spinAcceleration.toPrecision (5) + "/sec");
-            accumulator += spinAcceleration;
-            ++accumulatorCount;
-            return spinAcceleration;
-        }
-
-        this.thrust (-1, 1);
-        report();
-
-        this.thrust (-1, 1);
-        report();
-
-        this.thrust (1, -1);
-        report();
-
-        this.spinAcceleration = accumulator / accumulatorCount;
-        console.log ("Spin Acceleration: " + this.spinAcceleration);
-    }
-
     _.init = function (name, position, spinPosition) {
         // do the parental thing
-        Object.getPrototypeOf(Ship).init.call(this, name, Vector2d.zero (), 0);
+        Object.getPrototypeOf(_).init.call(this, name, Vector2d.zero(), 0);
+
+        // the ship should not be stunned to start
+        this.stunnedTime = 0;
 
         // two engines capable of overcoming gravity applied to three
         // particle masses g * 3 / 2...
@@ -47,18 +18,53 @@ var Ship = function () {
         return this;
     }
 
+    _.learn = function () {
+        this.reset(Vector2d.zero(), 0);
+        var spinVelocity = this.spinVelocity;
+        var accumulator = 0;
+        var accumulatorCount = 0;
+        var scope = this;
+        var report = function () {
+            var stabilizationFrames = 5;
+            for (var i = 0; i < stabilizationFrames; ++i) {
+                scope.update(deltaTime);
+            }
+            var spinAcceleration = Math.abs(scope.spinVelocity - spinVelocity) / (deltaTime * stabilizationFrames);
+            spinVelocity = scope.spinVelocity;
+            console.log("Spin Velocity: " + spinVelocity.toPrecision(5) + ", Spin Acceleration: " + spinAcceleration.toPrecision(5) + "/sec");
+            accumulator += spinAcceleration;
+            ++accumulatorCount;
+            return spinAcceleration;
+        }
+
+        this.thrust(-1, 1);
+        report();
+
+        this.thrust(-1, 1);
+        report();
+
+        this.thrust(1, -1);
+        report();
+
+        this.spinAcceleration = accumulator / accumulatorCount;
+        console.log("Spin Acceleration: " + this.spinAcceleration);
+    }
+
     _.thrust = function (left, right) {
-        // thrusts will be applied at the beginning of each time step, treated
-        // as a pulse value
-        var thrustScaling = this.thrustRatio * Cluster.getSubStepCount();
+        // don't do anything if the ship is stunned
+        if (this.stunnedTime <= 0) {
+            // thrusts will be applied at the beginning of each time step, treated
+            // as a pulse value
+            var thrustScaling = this.thrustRatio * Cluster.getSubStepCount();
 
-        var orientationVector = Vector2d.angle(this.spinPosition);
-        var leftThrustVector = orientationVector.scale(thrustScaling * left);
-        var rightThrustVector = orientationVector.scale(thrustScaling * right);
+            var orientationVector = Vector2d.angle(this.spinPosition);
+            var leftThrustVector = orientationVector.scale(thrustScaling * left);
+            var rightThrustVector = orientationVector.scale(thrustScaling * right);
 
-        // engines are assumed to be (left) particle 0, and (right) particle 1
-        this.particles[0].applyAcceleration(leftThrustVector);
-        this.particles[1].applyAcceleration(rightThrustVector);
+            // engines are assumed to be (left) particle 0, and (right) particle 1
+            this.particles[0].applyAcceleration(leftThrustVector);
+            this.particles[1].applyAcceleration(rightThrustVector);
+        }
     }
 
     _.point = function (direction) {
@@ -78,7 +84,7 @@ var Ship = function () {
         var timeToTargetSpinPosition = 0.15 * (1 + deltaSpinPositionMagnitude);
         var velocityToTargetSpinPosition = (deltaSpinPosition / timeToTargetSpinPosition);
         var deltaVelocityNeeded = velocityToTargetSpinPosition - this.spinVelocity;
-        var thrustNeeded = deltaVelocityNeeded / this.spinAcceleration;
+        var thrustNeeded = deltaVelocityNeeded / (this.spinAcceleration * 0.5); // conservative
         var clampedThrust = Math.min(Math.max(thrustNeeded, -1.0), 1.0);
         this.thrust (-clampedThrust, clampedThrust);
         //console.log ("thrust: " + clampedThrust);
@@ -133,16 +139,29 @@ var Ship = function () {
     }
 
     _.go = function (targetVelocity) {
-        shipGo (this, targetVelocity, 0.0, 1.0, 5.0);
+        shipGo (this, targetVelocity, 0.0, 1.0, 2.0);
     }
 
     _.goTo = function (targetPoint) {
         var targetVelocity = targetPoint.subtract (this.position);
-        shipGo (this, targetVelocity, -1.0e3, 0.9, 4.0);
+        shipGo (this, targetVelocity, -1.0e3, 0.99, 4.0);
     }
 
     _.stop = function () {
         shipGo (this, Vector2d.zero (), -1.0e3, 1.0, 5.0);
+    }
+
+    _.stun = function (stunnedTime) {
+        this.stunnedTime = Math.max(this.stunnedTime, stunnedTime);
+        //console.log ("stunnedTime: " + stunnedTime);
+    }
+
+    _.update = function (deltaTime) {
+        // do the parental thing
+        Object.getPrototypeOf(_).update.call(this, deltaTime);
+
+        // reduce the stunned time remaining
+        this.stunnedTime -= deltaTime;
     }
 
     return _;

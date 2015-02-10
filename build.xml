@@ -21,7 +21,10 @@
             <fileset dir="${source-dir}" includes="cluster.js" />
             <fileset dir="${source-dir}" includes="thing.js" />
             <fileset dir="${source-dir}" includes="ship.js" />
+            <fileset dir="${source-dir}" includes="gamekeys.js" />
+            <fileset dir="${source-dir}" includes="shell.js" />
             <fileset dir="${source-dir}" includes="game.js" />
+            <fileset dir="${source-dir}" includes="test.js" />
         </concat>
     </target>
 </project>

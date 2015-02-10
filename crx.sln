@@ -7,6 +7,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F51E8CC5-5BF
 	ProjectSection(SolutionItems) = preProject
 		src\cluster.js = src\cluster.js
 		src\game.js = src\game.js
+		src\keys.js = src\keys.js
 		src\macros.h = src\macros.h
 		src\particle.js = src\particle.js
 		src\ship.js = src\ship.js
@@ -21,6 +22,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "site", "site", "{3CE4B482-2
 		site\game.css = site\game.css
 		site\game.html = site\game.html
 		site\index.html = site\index.html
+		site\test.html = site\test.html
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{EC049922-F863-4C4B-AC70-DC458F855C26}"
