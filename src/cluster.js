@@ -147,9 +147,11 @@ var Cluster = function () {
 
     // how many polishing steps we want to take to allow the frame of reference
     // to be stabilized after applying forces
-    var subStepCount = 3;
+    var subStepCount = 4;
     _.getSubStepCount = function () {
+
         return subStepCount;
+
     }
 
     _.update = function (deltaTime) {
@@ -157,6 +159,7 @@ var Cluster = function () {
         var subStep = function (dT) {
             // resolve the constraints
             var resolveConstraint = function (c) {
+
                 var constraint = scope.constraints[c];
                 var a = scope.particles[constraint.a];
                 var b = scope.particles[constraint.b];
@@ -179,6 +182,7 @@ var Cluster = function () {
                 var F = springForce + velocityDampingForce;
                 a.applyForce(delta.scale(-F));
                 b.applyForce(delta.scale(F))
+
             }
             resolveConstraint(0);
             resolveConstraint(1);
@@ -188,15 +192,20 @@ var Cluster = function () {
             scope.particles[0].update(dT);
             scope.particles[1].update(dT);
             scope.particles[2].update(dT);
+
         }
 
         var dT = deltaTime / subStepCount;
         for (var i = 0; i < subStepCount; ++i) {
+
             subStep(dT);
+
         }
+
 
         // update the frame of reference
         this.updateFrameOfReference();
+
     };
 
     _.paint = function () {

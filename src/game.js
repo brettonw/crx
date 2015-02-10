@@ -102,7 +102,7 @@ function initPage() {
         var value = 0.05 * i;
         gridMin = -value;
         gridMax = value
-        gridLines = [gridMin].concat (gridLines).concat ([gridMax]);
+//        gridLines = [gridMin].concat (gridLines).concat ([gridMax]);
     }
     svg.selectAll(".xTicks")
         .data(gridLines)
@@ -137,6 +137,7 @@ function initPage() {
 
     var frameCounter = 0;
     var startTime;
+    var stun = 0;
     var gametimer = setInterval(function () {
         // update the clock display
         if (frameCounter++ == 0) {
@@ -163,30 +164,34 @@ function initPage() {
         ship.thrust (leftThrust, rightThrust);
         */
 
-        var deltaSpinPosition = ship.pointAt(targetPt);
+        stun = stun - 1.0;
+        if (stun <= 0) {
+            var deltaSpinPosition = ship.pointAt(targetPt);
 
-        if (upkeydown) {
-            var targetGo = targetPt.subtract (ship.position);
-            //console.log ("targetGoSpeed = " + targetGoSpeed.toPrecision (5));
-            // the 0.1 forces the ship to always stay focused forwards - it adds a
-            // missile-like component to the ship behavior, which will also be good
-            // for path-tracking operations
-            //ship.go (targetGo);
+            if (upkeydown) {
+                var targetGo = targetPt.subtract (ship.position);
+                //console.log ("targetGoSpeed = " + targetGoSpeed.toPrecision (5));
+                // the 0.1 forces the ship to always stay focused forwards - it adds a
+                // missile-like component to the ship behavior, which will also be good
+                // for path-tracking operations
+                //ship.go (targetGo);
 
-            ship.thrust(1.0, 1.0);
-            /*
-            var thrustLevel = 1.0 - (deltaSpinPosition / (Math.PI * 0.5));
-            if (thrustLevel > 0) {
-                thrustLevel = Math.pow(thrustLevel, 2);
-                ship.thrust(thrustLevel, thrustLevel);
+                ship.thrust(1.0, 1.0);
+                /*
+                var thrustLevel = 1.0 - (deltaSpinPosition / (Math.PI * 0.5));
+                if (thrustLevel > 0) {
+                    thrustLevel = Math.pow(thrustLevel, 2);
+                    ship.thrust(thrustLevel, thrustLevel);
+                }
+                */
+
+            } else if (downkeydown) {
+                ship.applyFunction (function (particle) {
+                    particle.applyDamping(-0.5);
+                });
+            } else {
+                //ship.stop ();
             }
-            */
-        } else if (downkeydown) {
-            ship.applyFunction (function (particle) {
-                particle.applyDamping(-0.5);
-            });
-        } else {
-            //ship.stop ();
         }
 
         // gravity
@@ -198,11 +203,23 @@ function initPage() {
                 var g = -9.8 * Cluster.getSubStepCount ();
                 var sy = sgn (particle.position.y);
                 var y = sy * particle.position.y;
-                var scale = Math.pow (Math.min (y / 0.25, 1.0), 1.0);
-                particle.applyAcceleration(Vector2d.xy(0, g * sy * scale));
-                if (particle.position.y < 0) {
-                    particle.applyDamping(-0.5 * scale);
+                var scale = Math.pow (Math.min (y / 0.25, 1.0), 2.0);
+                if (particle.position.y > 0.0) {
+                    particle.applyAcceleration(Vector2d.xy(0, g * sy * scale));
+                } else {
+                    var groundAccel = Vector2d.xy((-0.5 / deltaTime) * particle.velocity.x, 0);
+                    if (particle.velocity.y < 0) {
+                        var elasticity = 0.8;
+                        groundAccel.y = (particle.velocity.y * -(1.0 + elasticity)) / deltaTime;
+
+                        // punish a hard hit with disabled controls
+                        stun = Math.max (0.5 * (particle.velocity.norm () - 0.5) / deltaTime, stun);
+                        //if (stun > 0) console.log ("Stun: " + stun);
+                    }
+                    particle.applyAcceleration(groundAccel.scale (Cluster.getSubStepCount ()));
+                    particle.position.y = 0.0;
                 }
+
             });
         }
         ship.update(deltaTime);
