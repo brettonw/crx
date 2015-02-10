@@ -1,7 +1,7 @@
 var scale = 1.0;
 var deltaTime = 1.0 / 60.0;
 
-function initPage(gameFunction) {
+function initGame(gameFunction) {
     // add a keypress handler to the body
     GameKeys.init();
 

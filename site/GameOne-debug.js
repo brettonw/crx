@@ -516,7 +516,7 @@ var GameKeys = function () {
 }();
 var scale = 1.0;
 var deltaTime = 1.0 / 60.0;
-function initPage(gameFunction) {
+function initGame(gameFunction) {
     GameKeys.init();
     var target = d3.select("#display");
     var svg = target.append("svg").attr("class", "gameDisplay");
