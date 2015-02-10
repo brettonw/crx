@@ -37,7 +37,7 @@ var Ship = function () {
         // do the parental thing
         Object.getPrototypeOf(Ship).init.call(this, name, Vector2d.zero (), 0);
 
-        this.thrustRatio = 2.0;
+        this.thrustRatio = 14.75;
 
         this.learn ();
         this.reset (position, spinPosition);

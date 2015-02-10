@@ -163,33 +163,45 @@ function initPage() {
         ship.thrust (leftThrust, rightThrust);
         */
 
+        var deltaSpinPosition = ship.pointAt(targetPt);
+
         if (upkeydown) {
             var targetGo = targetPt.subtract (ship.position);
             //console.log ("targetGoSpeed = " + targetGoSpeed.toPrecision (5));
             // the 0.1 forces the ship to always stay focused forwards - it adds a
             // missile-like component to the ship behavior, which will also be good
             // for path-tracking operations
-            ship.go (targetGo);
+            //ship.go (targetGo);
+
+            ship.thrust(1.0, 1.0);
+            /*
+            var thrustLevel = 1.0 - (deltaSpinPosition / (Math.PI * 0.5));
+            if (thrustLevel > 0) {
+                thrustLevel = Math.pow(thrustLevel, 2);
+                ship.thrust(thrustLevel, thrustLevel);
+            }
+            */
         } else if (downkeydown) {
             ship.applyFunction (function (particle) {
                 particle.applyDamping(-0.5);
             });
         } else {
-            ship.stop ();
+            //ship.stop ();
         }
 
         // gravity
-        if (false) {
-            ship.applyFunction (function (particle) {
-                if (particle.position.y > 0.5) {
-                    particle.applyAcceleration(Vector2d.xy(0, -9.8));
-                } else if (particle.position.y > 0.0) {
-                    var scale = 0.5 - particle.position.y;
-                    particle.applyAcceleration(Vector2d.xy(0, -9.8 * scale));
-                    particle.applyDamping(-scale);
-                } else {
-                    particle.applyAcceleration(Vector2d.xy(0, -5.0 * particle.position.y));
-                    particle.applyDamping(-0.5);
+        if (true) {
+            ship.applyFunction(function (particle) {
+                var sgn = function (value) {
+                    return (value < 0.0) ? -1.0 : ((value > 0.0) ? 1.0 : 0.0);
+                }
+                var g = -9.8 * Cluster.getSubStepCount ();
+                var sy = sgn (particle.position.y);
+                var y = sy * particle.position.y;
+                var scale = Math.pow (Math.min (y / 0.25, 1.0), 1.0);
+                particle.applyAcceleration(Vector2d.xy(0, g * sy * scale));
+                if (particle.position.y < 0) {
+                    particle.applyDamping(-0.5 * scale);
                 }
             });
         }

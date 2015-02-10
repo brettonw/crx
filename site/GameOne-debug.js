@@ -316,7 +316,7 @@ var Ship = function () {
     }
     _.init = function (name, position, spinPosition) {
         Object.getPrototypeOf(Ship).init.call(this, name, Vector2d.zero (), 0);
-        this.thrustRatio = 2.0;
+        this.thrustRatio = 14.75;
         this.learn ();
         this.reset (position, spinPosition);
         return this;
@@ -503,27 +503,28 @@ function initPage() {
             var frames_per_second = frameCounter / seconds;
             fps.text(frames_per_second.toPrecision(5) + " fps");
         }
+        var deltaSpinPosition = ship.pointAt(targetPt);
         if (upkeydown) {
             var targetGo = targetPt.subtract (ship.position);
-            ship.go (targetGo);
+            ship.thrust(1.0, 1.0);
         } else if (downkeydown) {
             ship.applyFunction (function (particle) {
                 particle.applyDamping(-0.5);
             });
         } else {
-            ship.stop ();
         }
-        if (false) {
-            ship.applyFunction (function (particle) {
-                if (particle.position.y > 0.5) {
-                    particle.applyAcceleration(Vector2d.xy(0, -9.8));
-                } else if (particle.position.y > 0.0) {
-                    var scale = 0.5 - particle.position.y;
-                    particle.applyAcceleration(Vector2d.xy(0, -9.8 * scale));
-                    particle.applyDamping(-scale);
-                } else {
-                    particle.applyAcceleration(Vector2d.xy(0, -5.0 * particle.position.y));
-                    particle.applyDamping(-0.5);
+        if (true) {
+            ship.applyFunction(function (particle) {
+                var sgn = function (value) {
+                    return (value < 0.0) ? -1.0 : ((value > 0.0) ? 1.0 : 0.0);
+                }
+                var g = -9.8 * Cluster.getSubStepCount ();
+                var sy = sgn (particle.position.y);
+                var y = sy * particle.position.y;
+                var scale = Math.pow (Math.min (y / 0.25, 1.0), 1.0);
+                particle.applyAcceleration(Vector2d.xy(0, g * sy * scale));
+                if (particle.position.y < 0) {
+                    particle.applyDamping(-0.5 * scale);
                 }
             });
         }
