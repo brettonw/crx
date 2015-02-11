@@ -993,5 +993,8 @@ var Test = function () {
         ship.thrust(leftThrust, rightThrust);
     }
 
+    _["(E) Viewport"] = function (ship) {
+    }
+
     return _;
 }();
