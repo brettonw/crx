@@ -1,9 +1,41 @@
 var scale = 1.0;
 var deltaTime = 1.0 / 60.0;
 
+function preInitGame(gameObject) {
+    // get the game functions list, sorted alphabetically
+    var gameFunctionNames = [];
+    for (var gameFunctionName in gameObject) {
+        gameFunctionNames.push (gameFunctionName);
+    }
+    gameFunctionNames.sort ();
+
+    // display a list...
+    if (gameFunctionNames.length > 1) {
+        var gameList = document.createElement ("div");
+        gameList.className = "gameList";
+        gameList.id = "gameList";
+        for (var i = 0; i < gameFunctionNames.length; ++i) {
+            var link = document.createElement ("div");
+            link.innerHTML=gameFunctionNames[i];
+            link.onclick = function () {
+                this.parentNode.parentNode.removeChild (this.parentNode);
+                initGame (gameObject[this.innerHTML]);
+            };
+            gameList.appendChild (link);
+        }
+        var display = document.getElementById ("display");
+        display.appendChild (gameList);
+    } else {
+        initGame (gameObject[gameFunctionNames[0]]);
+    }
+}
+
 function initGame(gameFunction) {
     // add a keypress handler to the body
     GameKeys.init();
+
+    // almost all of this is d3 crap that I want to get rid of and replace with
+    // straight SVG...
 
     var target = d3.select("#display");
     var svg = target.append("svg").attr("class", "gameDisplay");
@@ -22,12 +54,14 @@ function initGame(gameFunction) {
         .scale(1.0)
         .scaleExtent([0.125, 8.0])
         .on("zoom", function () {
+
             child
                 //.transition().duration(100)
                 .attr("transform",
                     "translate(" + d3.event.translate[0] + "," + d3.event.translate[1] + ") " +
                     "scale(" + d3.event.scale + ")"
                 );
+
         })
     );
 
@@ -125,6 +159,7 @@ function initGame(gameFunction) {
         var frameRate = frameCount / (frameSum / 1000);
         fps.text(frameRate.toPrecision(5) + " fps");
 
+
         // play the game
         gameFunction(ship);
 
@@ -133,6 +168,7 @@ function initGame(gameFunction) {
 
         // draw the ship
         ship.paint();
+
     }, 1000 * deltaTime);
 
     // need a pause time button

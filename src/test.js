@@ -1,7 +1,7 @@
 var Test = function () {
     var _ = Object.create(null);
 
-    _.playWithGoTo = function (ship) {
+    _["(A) playWithGoTo"] = function (ship) {
         if (GameKeys.isDown(GameKeys.codes.upArrow)) {
             ship.goTo(GameKeys.targetPt);
         } else {
@@ -9,7 +9,7 @@ var Test = function () {
         }
     }
 
-    _.playWithGo = function (ship) {
+    _["(B) playWithGo"] = function (ship) {
         if (GameKeys.isDown(GameKeys.codes.upArrow)) {
             var targetGo = GameKeys.targetPt.subtract(ship.position);
             ship.go(targetGo);
@@ -18,14 +18,14 @@ var Test = function () {
         }
     }
 
-    _.playWithPoint = function (ship) {
+    _["(C) playWithPoint"] = function (ship) {
         var deltaSpinPosition = ship.pointAt(GameKeys.targetPt);
         if (GameKeys.isDown(GameKeys.codes.upArrow)) {
             ship.thrust(1.0, 1.0);
         }
     }
 
-    _.playWithKeys = function (ship) {
+    _["(D) playWithKeys"] = function (ship) {
         // play the game
         var leftThrust = 0.0;
         var rightThrust = 0.0;
