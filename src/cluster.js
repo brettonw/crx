@@ -159,7 +159,6 @@ var Cluster = function () {
         var subStep = function (dT) {
             // resolve the constraints
             var resolveConstraint = function (c) {
-
                 var constraint = scope.constraints[c];
                 var a = scope.particles[constraint.a];
                 var b = scope.particles[constraint.b];
@@ -169,20 +168,21 @@ var Cluster = function () {
                 // compute the relative velocity damping to apply
                 var relativeVelocity = a.velocity.subtract(b.velocity);
                 var springVelocity = relativeVelocity.dot(delta);
-                var velocityDampingForce = 0.5 * 0.5 * springVelocity * (a.mass + b.mass) / dT;
+                var totalMass = a.mass + b.mass;
+                var velocityDampingForceA = 0.5 * (a.mass / totalMass) * springVelocity * totalMass / dT;
+                var velocityDampingForceB = 0.5 * (b.mass / totalMass) * springVelocity * totalMass / dT;
 
                 // compute a spring force to make d be equal to constraint.d,
                 // using Hooke's law
-                // XXX this should be relative to dt and mass, I think
                 var x = d - constraint.d;
                 var k = 1;
                 var springForce = k * x;
 
                 // apply the forces
-                var F = springForce + velocityDampingForce;
-                a.applyForce(delta.scale(-F));
-                b.applyForce(delta.scale(F))
-
+                var FA = springForce + velocityDampingForceA;
+                var FB = springForce + velocityDampingForceB;
+                a.applyForce(delta.scale(-FA));
+                b.applyForce(delta.scale(FB))
             }
             resolveConstraint(0);
             resolveConstraint(1);

@@ -144,7 +144,7 @@ var Ship = function () {
 
     _.goTo = function (targetPoint) {
         var targetVelocity = targetPoint.subtract (this.position);
-        shipGo (this, targetVelocity, -1.0e3, 0.99, 4.0);
+        shipGo (this, targetVelocity, -1.0e3, 0.99, 6.0);
     }
 
     _.stop = function () {
