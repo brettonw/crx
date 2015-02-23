@@ -165,7 +165,8 @@ var Cluster = function () {
                 var delta = a.position.subtract(b.position);
                 var d = delta.normalize();
 
-                // compute the relative velocity damping to apply
+                // compute the relative velocity damping to apply, the goal 
+                // here is to halt all relative motion between the particles
                 var relativeVelocity = a.velocity.subtract(b.velocity);
                 var springVelocity = relativeVelocity.dot(delta);
                 var totalMass = a.mass + b.mass;
@@ -192,7 +193,6 @@ var Cluster = function () {
             scope.particles[0].update(dT);
             scope.particles[1].update(dT);
             scope.particles[2].update(dT);
-
         }
 
         var dT = deltaTime / subStepCount;
