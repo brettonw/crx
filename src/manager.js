@@ -97,19 +97,27 @@ var Manager = function () {
         });
     }
 
+    var gravity = null;
+
+    _.setGravity = function (g) {
+        gravity = g;
+    }
+
+    _.applyGravity = function (deltaTime) {
+        if (gravity !== null) {
+            particles.forEach(function (particle, index, array) {
+                gravity(particle, deltaTime);
+            });
+        }
+    }
+
     _.update = function () {
         for (var i = 0; i < subStepCount; ++i) {
             this.updateParticles(subDeltaTime);
+            this.applyGravity(subDeltaTime);
         }
         this.updateThings(deltaTime);
     }
-
-    _.applyFunction = function (f) {
-        particles.forEach(function (particle, index, array) {
-            f(particle);
-        });
-    }
-
 
     _.paint = function () {
         // paint all the things
