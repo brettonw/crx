@@ -15,14 +15,14 @@ var Game = function () {
         }
 
         // gravity
-        ship.applyFunction(function (particle) {
+        Manager.applyFunction(function (particle) {
             var sgn = function (value) {
                 return (value < 0.0) ? -1.0 : ((value > 0.0) ? 1.0 : 0.0);
             }
-            var g = -9.8 * Cluster.getSubStepCount();
+            var g = -9.8 * subStepCount;
             var sy = sgn(particle.position.y);
             var y = sy * particle.position.y;
-            var scale = Math.pow(Math.min(y / 0.25, 1.0), 2.0);
+            var scale = Math.pow(Math.min(y / 0.25, 1.0), 0.5);
             if (particle.position.y > 0.0) {
                 particle.applyAcceleration(Vector2d.xy(0, g * sy * scale));
             } else {
@@ -37,7 +37,7 @@ var Game = function () {
                         ship.stun(impact * 0.5);
                     }
                 }
-                particle.applyAcceleration(groundAccel.scale(Cluster.getSubStepCount()));
+                particle.applyAcceleration(groundAccel.scale(subStepCount));
                 particle.position.y = 0.0;
             }
         });

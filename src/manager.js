@@ -7,7 +7,8 @@ var Manager = function () {
     _.addParticle = function (particle) {
         var id = nextParticle++;
         particles.push(particle);
-        return id;
+        particle.id = id;
+        return particle;
     }
 
     _.removeParticle = function (id) {
@@ -20,14 +21,9 @@ var Manager = function () {
     var constraints = [];
     var nextConstraint = 0;
 
-    _.addConstraint = function (a, b) {
+    _.addConstraint = function (a, b, d) {
         var id = nextConstraint++;
-        var constraint = {
-            "a": a,
-            "b": b,
-            "d": particles[a].position.subtract(particles[b].position).norm()
-        }
-        constraints.push(constraint);
+        constraints.push({ "a": a, "b": b, "d": d });
         return id;
     }
 
@@ -54,14 +50,20 @@ var Manager = function () {
         delete things[id];
     }
 
-    _.step = function (deltaTime) {
+    _.makeGeometry = function (container) {
+        things.forEach(function (thing, index, array) {
+            thing.makeGeometry(container);
+        });
+    }
+
+    _.updateParticles = function (deltaTime) {
         // update all the particles
-        for (particle in particles) {
+        particles.forEach(function (particle, index, array) {
             particle.update(deltaTime);
-        }
+        });
 
         // update all the constraints
-        for (constraint in constraints) {
+        constraints.forEach(function (constraint, index, array) {
             var a = particles[constraint.a];
             var b = particles[constraint.b];
             var delta = a.position.subtract(b.position);
@@ -72,8 +74,8 @@ var Manager = function () {
             var relativeVelocity = a.velocity.subtract(b.velocity);
             var springVelocity = relativeVelocity.dot(delta);
             var totalMass = a.mass + b.mass;
-            var velocityDampingForceA = 0.5 * (a.mass / totalMass) * springVelocity * totalMass / dT;
-            var velocityDampingForceB = 0.5 * (b.mass / totalMass) * springVelocity * totalMass / dT;
+            var velocityDampingForceA = 0.5 * (a.mass / totalMass) * springVelocity * totalMass / deltaTime;
+            var velocityDampingForceB = 0.5 * (b.mass / totalMass) * springVelocity * totalMass / deltaTime;
 
             // compute a spring force to make d be equal to constraint.d,
             // using Hooke's law
@@ -86,14 +88,34 @@ var Manager = function () {
             var FB = springForce + velocityDampingForceB;
             a.applyForce(delta.scale(-FA));
             b.applyForce(delta.scale(FB))
-        }
+        });
     }
+
+    _.updateThings = function (deltaTime) {
+        things.forEach(function (thing, index, array) {
+            thing.update(deltaTime);
+        });
+    }
+
+    _.update = function () {
+        for (var i = 0; i < subStepCount; ++i) {
+            this.updateParticles(subDeltaTime);
+        }
+        this.updateThings(deltaTime);
+    }
+
+    _.applyFunction = function (f) {
+        particles.forEach(function (particle, index, array) {
+            f(particle);
+        });
+    }
+
 
     _.paint = function () {
         // paint all the things
-        for (thing in things) {
+        things.forEach(function (thing, index, array) {
             thing.paint();
-        }
+        });
     }
 
     return _;

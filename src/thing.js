@@ -1,83 +1,167 @@
 var Thing = function () {
-    var _ = Object.create(Particle);
+    var _ = Object.create(null);
+
+    // the points to define the geometry
+    var points = [
+        Vector2d.xy(-0.05, 0.05),
+        Vector2d.xy(-0.05, -0.05),
+        Vector2d.xy(0.10, 0.00)
+    ];
+
+    // incorporate the aggregate result of our particle cluster simulation to
+    // show the larger object behavior. we include measuring velocities and
+    // acceleration of the aggregate object
+    _.updateFrameOfReference = function (deltaTime) {
+        var scope = this;
+        var particles = this.particles;
+
+        // the frame of reference sets the position at the centroid of the
+        // particle cluster
+        var position = particles[0].position
+            .add(particles[1].position)
+            .add(particles[2].position)
+            .scale(1.0 / 3.0);
+        this.velocity = position
+            .subtract(this.position)
+            .scale(1.0 / deltaTime);
+        this.position = position;
+
+        // the frame of reference is computed as the line between [0,1] and
+        // [2,midpoint(0,1)], we might need to do a "polish" step on this in
+        // case those lines aren't actually perpendicular in the simulation
+        var midpoint = particles[0].position
+            .add(particles[1].position)
+            .scale(0.5);
+        var xAxis = particles[2].position
+            .subtract(midpoint).normalized();
+        var yAxis = xAxis.perpendicular();
+
+        // the spin position has to be calculated carefully because of the
+        // roll over of the coordinate system at pi/-pi, we assume that the
+        // sampling rate is sufficient to never see the object rotating faster
+        // than pi radians per frame in either direction
+        var spinPosition = Math.atan2(xAxis.y, xAxis.x);
+        var deltaSpinPosition = spinPosition - this.spinPosition;
+    	while (deltaSpinPosition > Math.PI) {
+            deltaSpinPosition -= (Math.PI * 2.0);
+        }
+        while (deltaSpinPosition < -Math.PI) {
+            deltaSpinPosition += (Math.PI * 2.0);
+        }
+        this.spinVelocity = deltaSpinPosition / deltaTime;
+        this.spinPosition = spinPosition;
+
+        // reset the particles to be where they are supposed to be, this is
+        // kind of cheating, but it resolves the drift problem that can only
+        // be fixed by going to much higher simulation rates
+        var resetParticle = function (i) {
+            particles[i].position = scope.position
+                .add(xAxis.scale(points[i].x))
+                .add(yAxis.scale(points[i].y));
+        }
+        resetParticle(0);
+        resetParticle(1);
+        resetParticle(2);
+    }
+
+    _.reset = function (position, spinPosition) {
+        var scope = this;
+
+        // reset the particles
+        var xAxis = Vector2d.angle(spinPosition);
+        var yAxis = xAxis.perpendicular();
+        var particle = function (i) {
+            scope.particles[i].reset(position
+                .add(xAxis.scale(points[i].x))
+                .add(yAxis.scale(points[i].y))
+                );
+        }
+        particle(0); particle(1); particle(2);
+
+        // set the initial frame of reference
+        this.position = position;
+        this.velocity = Vector2d.zero();
+        this.spinPosition = spinPosition;
+        this.spinVelocity = 0;
+
+        // update the frame of reference
+        this.updateFrameOfReference(deltaTime);
+    }
 
     _.init = function (name, position, spinPosition) {
-        // do the parental thing
-        Object.getPrototypeOf(Thing).init.call(this, name, position, 1.0, 1.0);
+        this.name = name;
 
-        // rotational parameters of a physical body in 2 dimensions, e.g. it can only
-        // rotate around an axis that is perpendicular to the 2D plane
-        this.spinMass = this.mass;
-        this.spinPosition = spinPosition;
-        this.spinVelocity = 0.0;
-        this.spinForce = 0.0;
+        // create the particle list
+        var particle = function (i) {
+            var r = 0.01, d = 300;
+            return Object.create(Particle).init(name + "-" + i, Vector2d.zero (), r, d);
+        }
+        this.particles = [
+            Manager.addParticle(particle(0)),
+            Manager.addParticle(particle(1)),
+            Manager.addParticle(particle(2)),
+        ];
+        this.mass = this.particles[0].mass + this.particles[1].mass + this.particles[2].mass;
+
+        // create the constraint list
+        var constrain = function (a, b) {
+            Manager.addConstraint (a, b, points[a].subtract(points[b]).norm());
+        }
+        constrain(0, 1); constrain(1, 2); constrain(2, 0);
+
+        // set everything for the first run
+        this.reset(position, spinPosition);
+
+        Manager.addThing(this);
 
         return this;
     }
 
-    _.applySpinForce = function (spinForce) {
-        this.spinForce += spinForce;
-    }
-
-    _.applySpinAcceleration = function (spinAcceleration) {
-        var spinForce = spinAcceleration * this.spinMass;
-        this.applySpinForce(spinForce);
-    }
-
-    _.applySpinDamping = function (spinDamping) {
-        // compute force due to damping, this is computed on a frame by frame
-        // basis, as opposed to over some time period (like 1 second)
-        this.applySpinAcceleration(this.spinVelocity * spinDamping / deltaTime);
-
-    }
-
     _.makeGeometry = function (container) {
-        var geometry = [
-            Vector2d.xy(0.00, 0.00),
-            Vector2d.xy(-0.05, 0.05),
-            Vector2d.xy(0.10, 0.00),
-            Vector2d.xy(-0.05, -0.05)
-        ];
-        var points = geometry[0].toString ();
-        for (var i = 1; i < geometry.length; ++i) {
-            points += " " + geometry[i].toString ();
-        }
+        // add the particles so I can see them
+        this.particles[0].makeGeometry(container);
+        this.particles[1].makeGeometry(container);
+        this.particles[2].makeGeometry(container);
+
+        // add a ghost of my intended shape
+        var points = this.particles[0].position.toString() + " " +
+                     this.particles[1].position.toString() + " " +
+                     this.particles[2].position.toString();
         this.svg = container.append("polygon")
-        .attr("stroke-width", 2.0 / scale)
-        .attr("fill", "red")
-        .attr("fill-opacity", "1.0")
-        .attr("stroke", "black")
-        .attr("stroke-opacity", "1.0")
-        .attr("stroke-linejoin", "round")
-        .attr("points", points);
+            .attr("fill", "red")
+            .attr("fill-opacity", 0.33)
+            .attr("points", points);
+
+        // add a line for the velocity vector
+        this.svgLine = container.append("line")
+            .attr("stroke", "blue")
+            .attr("stroke-opacity", 0.33)
+            .attr("stroke-width", 2.0 / scale);
 
         return this;
     };
 
     _.update = function (deltaTime) {
-        // do the parental thing
-        Object.getPrototypeOf(Thing).update.call(this);
-
-        // compute acceleration from the force, then clear out the force
-        var deltaSpinVelocity = this.spinForce * (deltaTime / this.spinMass);
-        this.spinForce = 0.0;
-
-        // using the midpoint method, compute the position change
-        this.spinPosition = this.spinPosition + (((deltaSpinVelocity * 0.5) + this.spinVelocity) * deltaTime);
-
-        // update the velocity from the delta
-        this.spinVelocity = this.spinVelocity + deltaSpinVelocity;
-
-        // keep the spin position in a math friendly range
-        var TWO_PI = Math.PI * 2;
-        while (this.spinPosition >= TWO_PI)
-            this.spinPosition -= TWO_PI;
-        while (this.spinPosition < 0)
-            this.spinPosition += TWO_PI;
-    };
+        // update the frame of reference
+        this.updateFrameOfReference(deltaTime);
+    }
 
     _.paint = function () {
+        // update the ghost
         this.svg.attr("transform", "translate(" + this.position.x + "," + this.position.y + ") rotate(" + (this.spinPosition * (180.0 / Math.PI)) + ", 0, 0)");
+
+        // update the velocity indicator
+        this.svgLine
+            .attr("transform", "translate(" + this.position.x + "," + this.position.y + ")")
+            .attr("x1", 0)
+            .attr("y1", 0)
+            .attr("x2", this.velocity.x)
+            .attr("y2", this.velocity.y);
+
+        // update the particles
+        this.particles[0].paint();
+        this.particles[1].paint();
+        this.particles[2].paint();
     }
 
     return _;

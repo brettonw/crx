@@ -80,14 +80,14 @@ var Particle = function () {
     }
     return _;
 }();
-var Cluster = function () {
+var Thing = function () {
     var _ = Object.create(null);
     var points = [
         Vector2d.xy(-0.05, 0.05),
         Vector2d.xy(-0.05, -0.05),
         Vector2d.xy(0.10, 0.00)
     ];
-    _.updateFrameOfReference = function () {
+    _.updateFrameOfReference = function (deltaTime) {
         var scope = this;
         var particles = this.particles;
         var position = particles[0].position
@@ -138,7 +138,7 @@ var Cluster = function () {
         this.velocity = Vector2d.zero();
         this.spinPosition = spinPosition;
         this.spinVelocity = 0;
-        this.updateFrameOfReference();
+        this.updateFrameOfReference(deltaTime);
     }
     _.init = function (name, position, spinPosition) {
         this.name = name;
@@ -146,19 +146,19 @@ var Cluster = function () {
             var r = 0.01, d = 300;
             return Object.create(Particle).init(name + "-" + i, Vector2d.zero (), r, d);
         }
-        this.particles = [particle(0), particle(1), particle(2)];
+        this.particles = [
+            Manager.addParticle(particle(0)),
+            Manager.addParticle(particle(1)),
+            Manager.addParticle(particle(2)),
+        ];
         this.mass = this.particles[0].mass + this.particles[1].mass + this.particles[2].mass;
         var constrain = function (a, b) {
-            return { "a": a, "b": b, "d": points[a].subtract(points[b]).norm() };
+            Manager.addConstraint (a, b, points[a].subtract(points[b]).norm());
         }
-        this.constraints = [constrain(0, 1), constrain(1, 2), constrain(2, 0)];
+        constrain(0, 1); constrain(1, 2); constrain(2, 0);
         this.reset(position, spinPosition);
+        Manager.addThing(this);
         return this;
-    }
-    _.applyFunction = function (f) {
-        f (this.particles[0]);
-        f (this.particles[1]);
-        f (this.particles[2]);
     }
     _.makeGeometry = function (container) {
         this.particles[0].makeGeometry(container);
@@ -177,45 +177,9 @@ var Cluster = function () {
             .attr("stroke-width", 2.0 / scale);
         return this;
     };
-    var subStepCount = 4;
-    _.getSubStepCount = function () {
-        return subStepCount;
-    }
     _.update = function (deltaTime) {
-        var scope = this;
-        var subStep = function (dT) {
-            var resolveConstraint = function (c) {
-                var constraint = scope.constraints[c];
-                var a = scope.particles[constraint.a];
-                var b = scope.particles[constraint.b];
-                var delta = a.position.subtract(b.position);
-                var d = delta.normalize();
-                var relativeVelocity = a.velocity.subtract(b.velocity);
-                var springVelocity = relativeVelocity.dot(delta);
-                var totalMass = a.mass + b.mass;
-                var velocityDampingForceA = 0.5 * (a.mass / totalMass) * springVelocity * totalMass / dT;
-                var velocityDampingForceB = 0.5 * (b.mass / totalMass) * springVelocity * totalMass / dT;
-                var x = d - constraint.d;
-                var k = 1;
-                var springForce = k * x;
-                var FA = springForce + velocityDampingForceA;
-                var FB = springForce + velocityDampingForceB;
-                a.applyForce(delta.scale(-FA));
-                b.applyForce(delta.scale(FB))
-            }
-            resolveConstraint(0);
-            resolveConstraint(1);
-            resolveConstraint(2);
-            scope.particles[0].update(dT);
-            scope.particles[1].update(dT);
-            scope.particles[2].update(dT);
-        }
-        var dT = deltaTime / subStepCount;
-        for (var i = 0; i < subStepCount; ++i) {
-            subStep(dT);
-        }
-        this.updateFrameOfReference();
-    };
+        this.updateFrameOfReference(deltaTime);
+    }
     _.paint = function () {
         this.svg.attr("transform", "translate(" + this.position.x + "," + this.position.y + ") rotate(" + (this.spinPosition * (180.0 / Math.PI)) + ", 0, 0)");
         this.svgLine
@@ -230,70 +194,12 @@ var Cluster = function () {
     }
     return _;
 }();
-var Thing = function () {
-    var _ = Object.create(Particle);
-    _.init = function (name, position, spinPosition) {
-        Object.getPrototypeOf(Thing).init.call(this, name, position, 1.0, 1.0);
-        this.spinMass = this.mass;
-        this.spinPosition = spinPosition;
-        this.spinVelocity = 0.0;
-        this.spinForce = 0.0;
-        return this;
-    }
-    _.applySpinForce = function (spinForce) {
-        this.spinForce += spinForce;
-    }
-    _.applySpinAcceleration = function (spinAcceleration) {
-        var spinForce = spinAcceleration * this.spinMass;
-        this.applySpinForce(spinForce);
-    }
-    _.applySpinDamping = function (spinDamping) {
-        this.applySpinAcceleration(this.spinVelocity * spinDamping / deltaTime);
-    }
-    _.makeGeometry = function (container) {
-        var geometry = [
-            Vector2d.xy(0.00, 0.00),
-            Vector2d.xy(-0.05, 0.05),
-            Vector2d.xy(0.10, 0.00),
-            Vector2d.xy(-0.05, -0.05)
-        ];
-        var points = geometry[0].toString ();
-        for (var i = 1; i < geometry.length; ++i) {
-            points += " " + geometry[i].toString ();
-        }
-        this.svg = container.append("polygon")
-        .attr("stroke-width", 2.0 / scale)
-        .attr("fill", "red")
-        .attr("fill-opacity", "1.0")
-        .attr("stroke", "black")
-        .attr("stroke-opacity", "1.0")
-        .attr("stroke-linejoin", "round")
-        .attr("points", points);
-        return this;
-    };
-    _.update = function (deltaTime) {
-        Object.getPrototypeOf(Thing).update.call(this);
-        var deltaSpinVelocity = this.spinForce * (deltaTime / this.spinMass);
-        this.spinForce = 0.0;
-        this.spinPosition = this.spinPosition + (((deltaSpinVelocity * 0.5) + this.spinVelocity) * deltaTime);
-        this.spinVelocity = this.spinVelocity + deltaSpinVelocity;
-        var TWO_PI = Math.PI * 2;
-        while (this.spinPosition >= TWO_PI)
-            this.spinPosition -= TWO_PI;
-        while (this.spinPosition < 0)
-            this.spinPosition += TWO_PI;
-    };
-    _.paint = function () {
-        this.svg.attr("transform", "translate(" + this.position.x + "," + this.position.y + ") rotate(" + (this.spinPosition * (180.0 / Math.PI)) + ", 0, 0)");
-    }
-    return _;
-}();
 var Ship = function () {
-    var _ = Object.create(Cluster);
+    var _ = Object.create(Thing);
     _.init = function (name, position, spinPosition) {
         Object.getPrototypeOf(_).init.call(this, name, Vector2d.zero(), 0);
         this.stunnedTime = 0;
-        this.thrustRatio = 14.75;
+        this.thrustRatio = 15;
         this.learn ();
         this.reset (position, spinPosition);
         return this;
@@ -307,7 +213,7 @@ var Ship = function () {
         var report = function () {
             var stabilizationFrames = 5;
             for (var i = 0; i < stabilizationFrames; ++i) {
-                scope.update(deltaTime);
+                Manager.update();
             }
             var spinAcceleration = Math.abs(scope.spinVelocity - spinVelocity) / (deltaTime * stabilizationFrames);
             spinVelocity = scope.spinVelocity;
@@ -327,7 +233,7 @@ var Ship = function () {
     }
     _.thrust = function (left, right) {
         if (this.stunnedTime <= 0) {
-            var thrustScaling = this.thrustRatio * Cluster.getSubStepCount();
+            var thrustScaling = this.thrustRatio * subStepCount;
             var orientationVector = Vector2d.angle(this.spinPosition);
             var leftThrustVector = orientationVector.scale(thrustScaling * left);
             var rightThrustVector = orientationVector.scale(thrustScaling * right);
@@ -398,7 +304,90 @@ var Ship = function () {
     }
     return _;
 }();
-var GameKeys = function () {
+var Manager = function () {
+    var _ = Object.create(null);
+    var particles = [];
+    var nextParticle = 0;
+    _.addParticle = function (particle) {
+        var id = nextParticle++;
+        particles.push(particle);
+        particle.id = id;
+        return particle;
+    }
+    _.removeParticle = function (id) {
+        delete particles[id];
+    }
+    var constraints = [];
+    var nextConstraint = 0;
+    _.addConstraint = function (a, b, d) {
+        var id = nextConstraint++;
+        constraints.push({ "a": a, "b": b, "d": d });
+        return id;
+    }
+    _.removeConstraint = function (id) {
+        delete constraints[id];
+    }
+    var things = []
+    var nextThing = 0;
+    _.addThing = function (thing) {
+        var id = nextThing++;
+        things.push(thing);
+        return id;
+    }
+    _.removeThing = function (id) {
+        delete things[id];
+    }
+    _.makeGeometry = function (container) {
+        things.forEach(function (thing, index, array) {
+            thing.makeGeometry(container);
+        });
+    }
+    _.updateParticles = function (deltaTime) {
+        particles.forEach(function (particle, index, array) {
+            particle.update(deltaTime);
+        });
+        constraints.forEach(function (constraint, index, array) {
+            var a = particles[constraint.a];
+            var b = particles[constraint.b];
+            var delta = a.position.subtract(b.position);
+            var d = delta.normalize();
+            var relativeVelocity = a.velocity.subtract(b.velocity);
+            var springVelocity = relativeVelocity.dot(delta);
+            var totalMass = a.mass + b.mass;
+            var velocityDampingForceA = 0.5 * (a.mass / totalMass) * springVelocity * totalMass / deltaTime;
+            var velocityDampingForceB = 0.5 * (b.mass / totalMass) * springVelocity * totalMass / deltaTime;
+            var x = d - constraint.d;
+            var k = 1;
+            var springForce = k * x;
+            var FA = springForce + velocityDampingForceA;
+            var FB = springForce + velocityDampingForceB;
+            a.applyForce(delta.scale(-FA));
+            b.applyForce(delta.scale(FB))
+        });
+    }
+    _.updateThings = function (deltaTime) {
+        things.forEach(function (thing, index, array) {
+            thing.update(deltaTime);
+        });
+    }
+    _.update = function () {
+        for (var i = 0; i < subStepCount; ++i) {
+            this.updateParticles(subDeltaTime);
+        }
+        this.updateThings(deltaTime);
+    }
+    _.applyFunction = function (f) {
+        particles.forEach(function (particle, index, array) {
+            f(particle);
+        });
+    }
+    _.paint = function () {
+        things.forEach(function (thing, index, array) {
+            thing.paint();
+        });
+    }
+    return _;
+}();var GameKeys = function () {
     var _ = Object.create(null);
     _.codes = {
         "backspace": 8,
@@ -519,6 +508,8 @@ var GameKeys = function () {
 }();
 var scale = 1.0;
 var deltaTime = 1.0 / 60.0;
+var subStepCount = 4;
+var subDeltaTime = deltaTime / subStepCount;
 function preInitGame(gameObject) {
     var gameFunctionNames = [];
     for (var gameFunctionName in gameObject) {
@@ -621,7 +612,8 @@ function initGame(gameFunction) {
         .attr("stroke", "black")
         .attr("stroke-opacity", "1.0")
         .attr("r", 0.01);
-    var ship = Object.create(Ship).init("Ship 1", Vector2d.zero(), 0).makeGeometry(svg);
+    var ship = Object.create(Ship).init("Ship 1", Vector2d.zero(), 0);
+    Manager.makeGeometry(svg);
     var frameCount = 30;
     var frameTimes = Array.apply(null, new Array(frameCount)).map(Number.prototype.valueOf,0);
     var frameIndex = 0;
@@ -637,8 +629,8 @@ function initGame(gameFunction) {
         var frameRate = frameCount / (frameSum / 1000);
         fps.text(frameRate.toPrecision(5) + " fps");
         gameFunction(ship);
-        ship.update(deltaTime);
-        ship.paint();
+        Manager.update();
+        Manager.paint();
     }, 1000 * deltaTime);
 }
 var Game = function () {
@@ -649,14 +641,14 @@ var Game = function () {
             var targetGo = GameKeys.targetPt.subtract(ship.position);
             ship.thrust(1.0, 1.0);
         }
-        ship.applyFunction(function (particle) {
+        Manager.applyFunction(function (particle) {
             var sgn = function (value) {
                 return (value < 0.0) ? -1.0 : ((value > 0.0) ? 1.0 : 0.0);
             }
-            var g = -9.8 * Cluster.getSubStepCount();
+            var g = -9.8 * subStepCount;
             var sy = sgn(particle.position.y);
             var y = sy * particle.position.y;
-            var scale = Math.pow(Math.min(y / 0.25, 1.0), 2.0);
+            var scale = Math.pow(Math.min(y / 0.25, 1.0), 0.5);
             if (particle.position.y > 0.0) {
                 particle.applyAcceleration(Vector2d.xy(0, g * sy * scale));
             } else {
@@ -669,7 +661,7 @@ var Game = function () {
                         ship.stun(impact * 0.5);
                     }
                 }
-                particle.applyAcceleration(groundAccel.scale(Cluster.getSubStepCount()));
+                particle.applyAcceleration(groundAccel.scale(subStepCount));
                 particle.position.y = 0.0;
             }
         });

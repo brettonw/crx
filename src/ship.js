@@ -1,5 +1,5 @@
 var Ship = function () {
-    var _ = Object.create(Cluster);
+    var _ = Object.create(Thing);
 
     _.init = function (name, position, spinPosition) {
         // do the parental thing
@@ -9,8 +9,8 @@ var Ship = function () {
         this.stunnedTime = 0;
 
         // two engines capable of overcoming gravity applied to three
-        // particle masses g * 3 / 2...
-        this.thrustRatio = 14.75;
+        // particle masses g * 3 / 2... = 14.75
+        this.thrustRatio = 15;
 
         this.learn ();
         this.reset (position, spinPosition);
@@ -27,7 +27,7 @@ var Ship = function () {
         var report = function () {
             var stabilizationFrames = 5;
             for (var i = 0; i < stabilizationFrames; ++i) {
-                scope.update(deltaTime);
+                Manager.update();
             }
             var spinAcceleration = Math.abs(scope.spinVelocity - spinVelocity) / (deltaTime * stabilizationFrames);
             spinVelocity = scope.spinVelocity;
@@ -55,7 +55,7 @@ var Ship = function () {
         if (this.stunnedTime <= 0) {
             // thrusts will be applied at the beginning of each time step, treated
             // as a pulse value
-            var thrustScaling = this.thrustRatio * Cluster.getSubStepCount();
+            var thrustScaling = this.thrustRatio * subStepCount;
 
             var orientationVector = Vector2d.angle(this.spinPosition);
             var leftThrustVector = orientationVector.scale(thrustScaling * left);

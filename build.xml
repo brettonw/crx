@@ -18,9 +18,9 @@
             <fileset dir="${source-dir}" includes="macros.h" />
             <fileset dir="${source-dir}" includes="vector2d.js" />
             <fileset dir="${source-dir}" includes="particle.js" />
-            <fileset dir="${source-dir}" includes="cluster.js" />
             <fileset dir="${source-dir}" includes="thing.js" />
             <fileset dir="${source-dir}" includes="ship.js" />
+            <fileset dir="${source-dir}" includes="manager.js" />
             <fileset dir="${source-dir}" includes="gamekeys.js" />
             <fileset dir="${source-dir}" includes="shell.js" />
             <fileset dir="${source-dir}" includes="game.js" />

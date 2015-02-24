@@ -1,5 +1,7 @@
 var scale = 1.0;
 var deltaTime = 1.0 / 60.0;
+var subStepCount = 4;
+var subDeltaTime = deltaTime / subStepCount;
 
 function preInitGame(gameObject) {
     // get the game functions list, sorted alphabetically
@@ -140,7 +142,9 @@ function initGame(gameFunction) {
         .attr("stroke-opacity", "1.0")
         .attr("r", 0.01);
 
-    var ship = Object.create(Ship).init("Ship 1", Vector2d.zero(), 0).makeGeometry(svg);
+    // create the ship, it adds itself to the manager
+    var ship = Object.create(Ship).init("Ship 1", Vector2d.zero(), 0);
+    Manager.makeGeometry(svg);
 
     // track and average the frame rate over the last n frames
     var frameCount = 30;
@@ -159,15 +163,12 @@ function initGame(gameFunction) {
         var frameRate = frameCount / (frameSum / 1000);
         fps.text(frameRate.toPrecision(5) + " fps");
 
-
         // play the game
         gameFunction(ship);
 
-        // update the ship
-        ship.update(deltaTime);
-
-        // draw the ship
-        ship.paint();
+        // update the world, and then paint
+        Manager.update();
+        Manager.paint();
 
     }, 1000 * deltaTime);
 
