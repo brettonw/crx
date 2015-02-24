@@ -640,43 +640,43 @@ function initGame(game) {
 var GameContainer = function () {
     var _ = Object.create(null);
     _.playWithGravity = function () {
-        var game = Object.create(null);
         var ship;
-        game.setup = function (container) {
-            ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
-            Manager.setGravity(function (particle, deltaTime) {
-                var g = -9.8;
-                var sy = Math.sgn(particle.position.y);
-                var y = sy * particle.position.y;
-                var scale = Math.pow(Math.min(y / 0.25, 1.0), 0.5);
-                if (particle.position.y > 0.0) {
-                    particle.applyAcceleration(Vector2d.xy(0, g * sy * scale));
-                } else {
-                    var groundAccel = Vector2d.xy((-0.5 / deltaTime) * particle.velocity.x, 0);
-                    if (particle.velocity.y < 0) {
-                        var elasticity = 0.8;
-                        groundAccel.y = (particle.velocity.y * -(1.0 + elasticity)) / deltaTime;
-                        var impact = particle.velocity.norm() - 0.5;
-                        if (impact > 0) {
-                            ship.stun(impact * 0.5);
+        return {
+            "setup": function (container) {
+                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
+                Manager.setGravity(function (particle, deltaTime) {
+                    var g = -9.8;
+                    var sy = Math.sgn(particle.position.y);
+                    var y = sy * particle.position.y;
+                    var scale = Math.pow(Math.min(y / 0.25, 1.0), 0.5);
+                    if (particle.position.y > 0.0) {
+                        particle.applyAcceleration(Vector2d.xy(0, g * sy * scale));
+                    } else {
+                        var groundAccel = Vector2d.xy((-0.5 / deltaTime) * particle.velocity.x, 0);
+                        if (particle.velocity.y < 0) {
+                            var elasticity = 0.8;
+                            groundAccel.y = (particle.velocity.y * -(1.0 + elasticity)) / deltaTime;
+                            var impact = particle.velocity.norm() - 0.5;
+                            if (impact > 0) {
+                                ship.stun(impact * 0.5);
+                            }
                         }
+                        particle.applyAcceleration(groundAccel);
+                        particle.position.y = 0.0;
                     }
-                    particle.applyAcceleration(groundAccel);
-                    particle.position.y = 0.0;
+                });
+            },
+            "play": function () {
+                var deltaSpinPosition = ship.pointAt(GameKeys.targetPt);
+                if (GameKeys.isDown(GameKeys.codes.upArrow)) {
+                    var targetGo = GameKeys.targetPt.subtract(ship.position);
+                    ship.thrust(1.0, 1.0);
                 }
-            });
-        }
-        game.play = function () {
-            var deltaSpinPosition = ship.pointAt(GameKeys.targetPt);
-            if (GameKeys.isDown(GameKeys.codes.upArrow)) {
-                var targetGo = GameKeys.targetPt.subtract(ship.position);
-                ship.thrust(1.0, 1.0);
+            },
+            "finish": function () {
+                Manager.setGravity(null);
             }
         }
-        game.finish = function () {
-            Manager.setGravity(null);
-        }
-        return game;
     }();
     return _;
 }();
