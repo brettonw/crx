@@ -3,36 +3,36 @@ var deltaTime = 1.0 / 60.0;
 var subStepCount = 4;
 var subDeltaTime = deltaTime / subStepCount;
 
-function preInitGame(gameObject) {
+function preInitGame(gameContainer) {
     // get the game functions list, sorted alphabetically
-    var gameFunctionNames = [];
-    for (var gameFunctionName in gameObject) {
-        gameFunctionNames.push (gameFunctionName);
+    var gameNames = [];
+    for (var gameName in gameContainer) {
+        gameNames.push(gameName);
     }
-    gameFunctionNames.sort ();
+    gameNames.sort();
 
     // display a list...
-    if (gameFunctionNames.length > 1) {
+    if (gameNames.length > 1) {
         var gameList = document.createElement ("div");
         gameList.className = "gameList";
         gameList.id = "gameList";
-        for (var i = 0; i < gameFunctionNames.length; ++i) {
+        for (var i = 0; i < gameNames.length; ++i) {
             var link = document.createElement ("div");
-            link.innerHTML=gameFunctionNames[i];
+            link.innerHTML = gameNames[i];
             link.onclick = function () {
                 this.parentNode.parentNode.removeChild (this.parentNode);
-                initGame (gameObject[this.innerHTML]);
+                initGame(gameContainer[this.innerHTML]);
             };
             gameList.appendChild (link);
         }
         var display = document.getElementById ("display");
         display.appendChild (gameList);
     } else {
-        initGame (gameObject[gameFunctionNames[0]]);
+        initGame(gameContainer[gameNames[0]]);
     }
 }
 
-function initGame(gameFunction) {
+function initGame(game) {
     // add a keypress handler to the body
     GameKeys.init();
 
@@ -142,9 +142,8 @@ function initGame(gameFunction) {
         .attr("stroke-opacity", "1.0")
         .attr("r", 0.01);
 
-    // create the ship, it adds itself to the manager
-    var ship = Object.create(Ship).init("Ship 1", Vector2d.zero(), 0);
-    Manager.makeGeometry(svg);
+    // set up the game
+    game.setup(svg);
 
     // track and average the frame rate over the last n frames
     var frameCount = 30;
@@ -164,13 +163,16 @@ function initGame(gameFunction) {
         fps.text(frameRate.toPrecision(5) + " fps");
 
         // play the game
-        gameFunction(ship);
+        game.play();
 
         // update the world, and then paint
         Manager.update();
         Manager.paint();
 
     }, 1000 * deltaTime);
+
+    // clean up after playing
+    //game.finish();
 
     // need a pause time button
 }

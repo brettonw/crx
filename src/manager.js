@@ -50,12 +50,6 @@ var Manager = function () {
         delete things[id];
     }
 
-    _.makeGeometry = function (container) {
-        things.forEach(function (thing, index, array) {
-            thing.makeGeometry(container);
-        });
-    }
-
     _.updateParticles = function (deltaTime) {
         // update all the particles
         particles.forEach(function (particle, index, array) {
@@ -97,6 +91,8 @@ var Manager = function () {
         });
     }
 
+    // gravity, if present, is just a function that gets applied to all
+    // particles every update
     var gravity = null;
 
     _.setGravity = function (g) {
@@ -111,6 +107,7 @@ var Manager = function () {
         }
     }
 
+    // a standard update, separate from painting
     _.update = function () {
         for (var i = 0; i < subStepCount; ++i) {
             this.updateParticles(subDeltaTime);

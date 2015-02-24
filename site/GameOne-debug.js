@@ -1,4 +1,7 @@
 "use strict";
+Math.sgn = function (value) {
+    return (value < 0.0) ? -1.0 : ((value > 0.0) ? 1.0 : 0.0);
+}
 var Vector2d = function () {
     var _ = Object.create(null);
     var makeVector = function (x, y) {
@@ -337,11 +340,6 @@ var Manager = function () {
     _.removeThing = function (id) {
         delete things[id];
     }
-    _.makeGeometry = function (container) {
-        things.forEach(function (thing, index, array) {
-            thing.makeGeometry(container);
-        });
-    }
     _.updateParticles = function (deltaTime) {
         particles.forEach(function (particle, index, array) {
             particle.update(deltaTime);
@@ -517,32 +515,32 @@ var scale = 1.0;
 var deltaTime = 1.0 / 60.0;
 var subStepCount = 4;
 var subDeltaTime = deltaTime / subStepCount;
-function preInitGame(gameObject) {
-    var gameFunctionNames = [];
-    for (var gameFunctionName in gameObject) {
-        gameFunctionNames.push (gameFunctionName);
+function preInitGame(gameContainer) {
+    var gameNames = [];
+    for (var gameName in gameContainer) {
+        gameNames.push(gameName);
     }
-    gameFunctionNames.sort ();
-    if (gameFunctionNames.length > 1) {
+    gameNames.sort();
+    if (gameNames.length > 1) {
         var gameList = document.createElement ("div");
         gameList.className = "gameList";
         gameList.id = "gameList";
-        for (var i = 0; i < gameFunctionNames.length; ++i) {
+        for (var i = 0; i < gameNames.length; ++i) {
             var link = document.createElement ("div");
-            link.innerHTML=gameFunctionNames[i];
+            link.innerHTML = gameNames[i];
             link.onclick = function () {
                 this.parentNode.parentNode.removeChild (this.parentNode);
-                initGame (gameObject[this.innerHTML]);
+                initGame(gameContainer[this.innerHTML]);
             };
             gameList.appendChild (link);
         }
         var display = document.getElementById ("display");
         display.appendChild (gameList);
     } else {
-        initGame (gameObject[gameFunctionNames[0]]);
+        initGame(gameContainer[gameNames[0]]);
     }
 }
-function initGame(gameFunction) {
+function initGame(game) {
     GameKeys.init();
     var target = d3.select("#display");
     var svg = target.append("svg").attr("class", "gameDisplay");
@@ -619,8 +617,7 @@ function initGame(gameFunction) {
         .attr("stroke", "black")
         .attr("stroke-opacity", "1.0")
         .attr("r", 0.01);
-    var ship = Object.create(Ship).init("Ship 1", Vector2d.zero(), 0);
-    Manager.makeGeometry(svg);
+    game.setup(svg);
     var frameCount = 30;
     var frameTimes = Array.apply(null, new Array(frameCount)).map(Number.prototype.valueOf,0);
     var frameIndex = 0;
@@ -635,81 +632,130 @@ function initGame(gameFunction) {
         lastTime = nowTime;
         var frameRate = frameCount / (frameSum / 1000);
         fps.text(frameRate.toPrecision(5) + " fps");
-        gameFunction(ship);
+        game.play();
         Manager.update();
         Manager.paint();
     }, 1000 * deltaTime);
 }
-var Game = function () {
+var GameContainer = function () {
     var _ = Object.create(null);
-    _.playWithGravity = function (ship) {
-        var deltaSpinPosition = ship.pointAt(GameKeys.targetPt);
-        if (GameKeys.isDown(GameKeys.codes.upArrow)) {
-            var targetGo = GameKeys.targetPt.subtract(ship.position);
-            ship.thrust(1.0, 1.0);
-        }
-        var sgn = function (value) {
-            return (value < 0.0) ? -1.0 : ((value > 0.0) ? 1.0 : 0.0);
-        }
-        Manager.setGravity(function (particle, deltaTime) {
-            var g = -9.8;
-            var sy = sgn(particle.position.y);
-            var y = sy * particle.position.y;
-            var scale = Math.pow(Math.min(y / 0.25, 1.0), 0.5);
-            if (particle.position.y > 0.0) {
-                particle.applyAcceleration(Vector2d.xy(0, g * sy * scale));
-            } else {
-                var groundAccel = Vector2d.xy((-0.5 / deltaTime) * particle.velocity.x, 0);
-                if (particle.velocity.y < 0) {
-                    var elasticity = 0.8;
-                    groundAccel.y = (particle.velocity.y * -(1.0 + elasticity)) / deltaTime;
-                    var impact = particle.velocity.norm() - 0.5;
-                    if (impact > 0) {
-                        ship.stun(impact * 0.5);
+    _.playWithGravity = function () {
+        var game = Object.create(null);
+        var ship;
+        game.setup = function (container) {
+            ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
+            Manager.setGravity(function (particle, deltaTime) {
+                var g = -9.8;
+                var sy = Math.sgn(particle.position.y);
+                var y = sy * particle.position.y;
+                var scale = Math.pow(Math.min(y / 0.25, 1.0), 0.5);
+                if (particle.position.y > 0.0) {
+                    particle.applyAcceleration(Vector2d.xy(0, g * sy * scale));
+                } else {
+                    var groundAccel = Vector2d.xy((-0.5 / deltaTime) * particle.velocity.x, 0);
+                    if (particle.velocity.y < 0) {
+                        var elasticity = 0.8;
+                        groundAccel.y = (particle.velocity.y * -(1.0 + elasticity)) / deltaTime;
+                        var impact = particle.velocity.norm() - 0.5;
+                        if (impact > 0) {
+                            ship.stun(impact * 0.5);
+                        }
                     }
+                    particle.applyAcceleration(groundAccel);
+                    particle.position.y = 0.0;
                 }
-                particle.applyAcceleration(groundAccel);
-                particle.position.y = 0.0;
+            });
+        }
+        game.play = function () {
+            var deltaSpinPosition = ship.pointAt(GameKeys.targetPt);
+            if (GameKeys.isDown(GameKeys.codes.upArrow)) {
+                var targetGo = GameKeys.targetPt.subtract(ship.position);
+                ship.thrust(1.0, 1.0);
             }
-        });
-    }
+        }
+        game.finish = function () {
+            Manager.setGravity(null);
+        }
+        return game;
+    }();
     return _;
 }();
 var Test = function () {
     var _ = Object.create(null);
     _["(A) Go To"] = function (ship) {
-        if (GameKeys.isDown(GameKeys.codes.upArrow)) {
-            ship.goTo(GameKeys.targetPt);
-        } else {
-            ship.stop();
-        }
-    }
+        var ship;
+        return {
+            "setup": function (container) {
+                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
+            },
+            "play": function () {
+                if (GameKeys.isDown(GameKeys.codes.upArrow)) {
+                    ship.goTo(GameKeys.targetPt);
+                } else {
+                    ship.stop();
+                }
+            },
+            "finish": function () { }
+        };
+    }();
     _["(B) Go Toward"] = function (ship) {
-        if (GameKeys.isDown(GameKeys.codes.upArrow)) {
-            var targetGo = GameKeys.targetPt.subtract(ship.position);
-            ship.go(targetGo);
-        } else {
-            ship.stop();
-        }
-    }
+        var ship;
+        return {
+            "setup": function (container) {
+                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
+            },
+            "play": function () {
+                if (GameKeys.isDown(GameKeys.codes.upArrow)) {
+                    var targetGo = GameKeys.targetPt.subtract(ship.position);
+                    ship.go(targetGo);
+                } else {
+                    ship.stop();
+                }
+            },
+            "finish": function () { }
+        };
+    }();
     _["(C) Point At"] = function (ship) {
-        var deltaSpinPosition = ship.pointAt(GameKeys.targetPt);
-        if (GameKeys.isDown(GameKeys.codes.upArrow)) {
-            ship.thrust(1.0, 1.0);
-        }
-    }
+        var ship;
+        return {
+            "setup": function (container) {
+                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
+            },
+            "play": function () {
+                var deltaSpinPosition = ship.pointAt(GameKeys.targetPt);
+                if (GameKeys.isDown(GameKeys.codes.upArrow)) {
+                    ship.thrust(1.0, 1.0);
+                }
+            },
+            "finish": function () { }
+        };
+    }();
     _["(D) Key Controls"] = function (ship) {
-        var leftThrust = 0.0;
-        var rightThrust = 0.0;
-        if (GameKeys.isDown(GameKeys.codes.upArrow)) { leftThrust += 1.0; rightThrust += 1.0; }
-        if (GameKeys.isDown(GameKeys.codes.downArrow)) { leftThrust += -0.5; rightThrust += -0.5; }
-        if (GameKeys.isDown(GameKeys.codes.rightArrow)) { leftThrust += 0.5; rightThrust += -0.5; }
-        if (GameKeys.isDown(GameKeys.codes.leftArrow)) { leftThrust += -0.5; rightThrust += 0.5; }
-        leftThrust = Math.max(-1.0, leftThrust); leftThrust = Math.min(1.0, leftThrust);
-        rightThrust = Math.max(-1.0, rightThrust); rightThrust = Math.min(1.0, rightThrust);
-        ship.thrust(leftThrust, rightThrust);
-    }
+        var ship;
+        return {
+            "setup": function (container) {
+                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
+            },
+            "play": function () {
+                var leftThrust = 0.0;
+                var rightThrust = 0.0;
+                if (GameKeys.isDown(GameKeys.codes.upArrow)) { leftThrust += 1.0; rightThrust += 1.0; }
+                if (GameKeys.isDown(GameKeys.codes.downArrow)) { leftThrust += -0.5; rightThrust += -0.5; }
+                if (GameKeys.isDown(GameKeys.codes.rightArrow)) { leftThrust += 0.5; rightThrust += -0.5; }
+                if (GameKeys.isDown(GameKeys.codes.leftArrow)) { leftThrust += -0.5; rightThrust += 0.5; }
+                leftThrust = Math.max(-1.0, leftThrust); leftThrust = Math.min(1.0, leftThrust);
+                rightThrust = Math.max(-1.0, rightThrust); rightThrust = Math.min(1.0, rightThrust);
+                ship.thrust(leftThrust, rightThrust);
+            },
+            "finish": function () { }
+        };
+    }();
     _["(E) Viewport"] = function (ship) {
-    }
+        return {
+            "setup": function (container) { },
+            "play": function () { },
+            "finish": function () { }
+        };
+    }();
     return _;
 }();
