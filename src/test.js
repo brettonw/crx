@@ -132,9 +132,13 @@ var TestContainer = function () {
                 particles[1].paint();
                 particles[2].paint();
 
-                if (GameKeys.isDown(GameKeys.codes.leftArrow)) {
+                if (GameKeys.isDown(GameKeys.codes.rightArrow)) {
                     particles[0].applyAcceleration(xAxis.scale(1));
                     particles[1].applyAcceleration(xAxis.scale(-1));
+                }
+                if (GameKeys.isDown(GameKeys.codes.leftArrow)) {
+                    particles[0].applyAcceleration(xAxis.scale(-1));
+                    particles[1].applyAcceleration(xAxis.scale(1));
                 }
             },
             "finish": function () { }
