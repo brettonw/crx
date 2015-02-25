@@ -105,7 +105,9 @@ var Thing = function () {
 
         // create the constraint list
         var constrain = function (a, b) {
-            Manager.addConstraint (a, b, points[a].subtract(points[b]).norm());
+            var id_a = this.particles[a].id;
+            var id_b = this.particles[b].id;
+            Manager.addConstraint(id_a, id_b, points[a].subtract(points[b]).norm());
         }
         constrain(0, 1); constrain(1, 2); constrain(2, 0);
 
