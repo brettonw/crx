@@ -155,9 +155,10 @@ var Thing = function () {
             Manager.addParticle(particle(2)),
         ];
         this.mass = this.particles[0].mass + this.particles[1].mass + this.particles[2].mass;
+        var scope = this;
         var constrain = function (a, b) {
-            var id_a = this.particles[a].id;
-            var id_b = this.particles[b].id;
+            var id_a = scope.particles[a].id;
+            var id_b = scope.particles[b].id;
             Manager.addConstraint(id_a, id_b, points[a].subtract(points[b]).norm());
         }
         constrain(0, 1); constrain(1, 2); constrain(2, 0);
