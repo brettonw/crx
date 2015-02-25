@@ -1,7 +1,7 @@
 var GameContainer = function () {
-    var _ = Object.create(null);
+    var _ = Object.create(Container);
 
-    _.playWithGravity = function () {
+    _.addGame ("Play with Gravity", function () {
         // the ship we want to play the game with
         var ship;
         return {
@@ -52,7 +52,7 @@ var GameContainer = function () {
                 Manager.setGravity(null);
             }
         }
-    }();
+    }());
 
     return _;
 }();

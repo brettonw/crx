@@ -1,7 +1,7 @@
-var Test = function () {
-    var _ = Object.create(null);
+var TestContainer = function () {
+    var _ = Object.create(Container);
 
-    _["(A) Go To"] = function (ship) {
+    _.addGame ("Go To", function (ship) {
         var ship;
         return {
             "setup": function (container) {
@@ -16,9 +16,9 @@ var Test = function () {
             },
             "finish": function () { }
         };
-    }();
+    }());
 
-    _["(B) Go Toward"] = function (ship) {
+    _.addGame ("Go Toward", function (ship) {
         var ship;
         return {
             "setup": function (container) {
@@ -34,9 +34,9 @@ var Test = function () {
             },
             "finish": function () { }
         };
-    }();
+    }());
 
-    _["(C) Point At"] = function (ship) {
+    _.addGame ("Point At", function (ship) {
         var ship;
         return {
             "setup": function (container) {
@@ -50,9 +50,9 @@ var Test = function () {
             },
             "finish": function () { }
         };
-    }();
+    }());
 
-    _["(D) Key Controls"] = function (ship) {
+    _.addGame ("Key Controls", function (ship) {
         var ship;
         return {
             "setup": function (container) {
@@ -71,15 +71,36 @@ var Test = function () {
             },
             "finish": function () { }
         };
-    }();
+    }());
 
-    _["(E) Viewport"] = function (ship) {
+    _.addGame ("Key Controls", function (ship) {
+        var ship;
+        return {
+            "setup": function (container) {
+                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
+            },
+            "play": function () {
+                var leftThrust = 0.0;
+                var rightThrust = 0.0;
+                if (GameKeys.isDown(GameKeys.codes.upArrow)) { leftThrust += 1.0; rightThrust += 1.0; }
+                if (GameKeys.isDown(GameKeys.codes.downArrow)) { leftThrust += -0.5; rightThrust += -0.5; }
+                if (GameKeys.isDown(GameKeys.codes.rightArrow)) { leftThrust += 0.5; rightThrust += -0.5; }
+                if (GameKeys.isDown(GameKeys.codes.leftArrow)) { leftThrust += -0.5; rightThrust += 0.5; }
+                leftThrust = Math.max(-1.0, leftThrust); leftThrust = Math.min(1.0, leftThrust);
+                rightThrust = Math.max(-1.0, rightThrust); rightThrust = Math.min(1.0, rightThrust);
+                ship.thrust(leftThrust, rightThrust);
+            },
+            "finish": function () { }
+        };
+    }());
+
+    _.addGame ("Viewport", function (ship) {
         return {
             "setup": function (container) { },
             "play": function () { },
             "finish": function () { }
         };
-    }();
+    }());
 
     return _;
 }();

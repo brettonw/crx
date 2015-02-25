@@ -3,13 +3,9 @@ var deltaTime = 1.0 / 60.0;
 var subStepCount = 4;
 var subDeltaTime = deltaTime / subStepCount;
 
-function preInitGame(gameContainer) {
+function preInitGame(container) {
     // get the game functions list, sorted alphabetically
-    var gameNames = [];
-    for (var gameName in gameContainer) {
-        gameNames.push(gameName);
-    }
-    gameNames.sort();
+    var gameNames = container.getGameNames ();
 
     // display a list...
     if (gameNames.length > 1) {
@@ -21,14 +17,14 @@ function preInitGame(gameContainer) {
             link.innerHTML = gameNames[i];
             link.onclick = function () {
                 this.parentNode.parentNode.removeChild (this.parentNode);
-                initGame(gameContainer[this.innerHTML]);
+                initGame(container.getGame (this.innerHTML));
             };
             gameList.appendChild (link);
         }
         var display = document.getElementById ("display");
         display.appendChild (gameList);
     } else {
-        initGame(gameContainer[gameNames[0]]);
+        initGame(container.getGame (gameNames[0]));
     }
 }
 

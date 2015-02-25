@@ -23,6 +23,7 @@
             <fileset dir="${source-dir}" includes="ship.js" />
             <fileset dir="${source-dir}" includes="manager.js" />
             <fileset dir="${source-dir}" includes="gamekeys.js" />
+            <fileset dir="${source-dir}" includes="container.js" />
             <fileset dir="${source-dir}" includes="shell.js" />
             <fileset dir="${source-dir}" includes="game.js" />
             <fileset dir="${source-dir}" includes="test.js" />

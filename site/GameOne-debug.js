@@ -511,16 +511,35 @@ var Manager = function () {
     }
     return _;
 }();
+var Container = function () {
+    var _ = Object.create(null);
+    _.addGame = function (name, game) {
+        if (("games" in this) == false) {
+            this.games = Object.create(null);
+            this.prefix = "A".charCodeAt(0);
+        }
+        name = "(" + String.fromCharCode(this.prefix++) + ") " + name;
+        this.games[name] = game;
+    }
+    _.getGameNames = function () {
+        var gameNames = [];
+        for (var gameName in this.games) {
+            gameNames.push(gameName);
+        }
+        gameNames.sort();
+        return gameNames;
+    }
+    _.getGame = function (name) {
+        return this.games[name];
+    }
+    return _;
+}();
 var scale = 1.0;
 var deltaTime = 1.0 / 60.0;
 var subStepCount = 4;
 var subDeltaTime = deltaTime / subStepCount;
-function preInitGame(gameContainer) {
-    var gameNames = [];
-    for (var gameName in gameContainer) {
-        gameNames.push(gameName);
-    }
-    gameNames.sort();
+function preInitGame(container) {
+    var gameNames = container.getGameNames ();
     if (gameNames.length > 1) {
         var gameList = document.createElement ("div");
         gameList.className = "gameList";
@@ -530,14 +549,14 @@ function preInitGame(gameContainer) {
             link.innerHTML = gameNames[i];
             link.onclick = function () {
                 this.parentNode.parentNode.removeChild (this.parentNode);
-                initGame(gameContainer[this.innerHTML]);
+                initGame(container.getGame (this.innerHTML));
             };
             gameList.appendChild (link);
         }
         var display = document.getElementById ("display");
         display.appendChild (gameList);
     } else {
-        initGame(gameContainer[gameNames[0]]);
+        initGame(container.getGame (gameNames[0]));
     }
 }
 function initGame(game) {
@@ -638,8 +657,8 @@ function initGame(game) {
     }, 1000 * deltaTime);
 }
 var GameContainer = function () {
-    var _ = Object.create(null);
-    _.playWithGravity = function () {
+    var _ = Object.create(Container);
+    _.addGame ("Play with Gravity", function () {
         var ship;
         return {
             "setup": function (container) {
@@ -677,12 +696,12 @@ var GameContainer = function () {
                 Manager.setGravity(null);
             }
         }
-    }();
+    }());
     return _;
 }();
-var Test = function () {
-    var _ = Object.create(null);
-    _["(A) Go To"] = function (ship) {
+var TestContainer = function () {
+    var _ = Object.create(Container);
+    _.addGame ("Go To", function (ship) {
         var ship;
         return {
             "setup": function (container) {
@@ -697,8 +716,8 @@ var Test = function () {
             },
             "finish": function () { }
         };
-    }();
-    _["(B) Go Toward"] = function (ship) {
+    }());
+    _.addGame ("Go Toward", function (ship) {
         var ship;
         return {
             "setup": function (container) {
@@ -714,8 +733,8 @@ var Test = function () {
             },
             "finish": function () { }
         };
-    }();
-    _["(C) Point At"] = function (ship) {
+    }());
+    _.addGame ("Point At", function (ship) {
         var ship;
         return {
             "setup": function (container) {
@@ -729,8 +748,8 @@ var Test = function () {
             },
             "finish": function () { }
         };
-    }();
-    _["(D) Key Controls"] = function (ship) {
+    }());
+    _.addGame ("Key Controls", function (ship) {
         var ship;
         return {
             "setup": function (container) {
@@ -749,13 +768,33 @@ var Test = function () {
             },
             "finish": function () { }
         };
-    }();
-    _["(E) Viewport"] = function (ship) {
+    }());
+    _.addGame ("Key Controls", function (ship) {
+        var ship;
+        return {
+            "setup": function (container) {
+                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
+            },
+            "play": function () {
+                var leftThrust = 0.0;
+                var rightThrust = 0.0;
+                if (GameKeys.isDown(GameKeys.codes.upArrow)) { leftThrust += 1.0; rightThrust += 1.0; }
+                if (GameKeys.isDown(GameKeys.codes.downArrow)) { leftThrust += -0.5; rightThrust += -0.5; }
+                if (GameKeys.isDown(GameKeys.codes.rightArrow)) { leftThrust += 0.5; rightThrust += -0.5; }
+                if (GameKeys.isDown(GameKeys.codes.leftArrow)) { leftThrust += -0.5; rightThrust += 0.5; }
+                leftThrust = Math.max(-1.0, leftThrust); leftThrust = Math.min(1.0, leftThrust);
+                rightThrust = Math.max(-1.0, rightThrust); rightThrust = Math.min(1.0, rightThrust);
+                ship.thrust(leftThrust, rightThrust);
+            },
+            "finish": function () { }
+        };
+    }());
+    _.addGame ("Viewport", function (ship) {
         return {
             "setup": function (container) { },
             "play": function () { },
             "finish": function () { }
         };
-    }();
+    }());
     return _;
 }();
