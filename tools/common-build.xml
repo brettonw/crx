@@ -1,5 +1,5 @@
 <project name="Common" default="rel" basedir=".">
-    <property name="source-dir" value="src"/>
+    <property name="src-dir" value="src"/>
     <property name="build-dir" value="build"/>
     <property name="site-dir" value="site"/>
 

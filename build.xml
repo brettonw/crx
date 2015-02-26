@@ -1,21 +1,20 @@
 <project name="GameOne" default="rel" basedir=".">
-    <description> Build file for GameOne JavaScript project </description>
+    <description> Build file for CRX JavaScript project </description>
     <property name="build-tools-dir" value="tools"/>
     <import file="${build-tools-dir}/common-build.xml"/>
 
-    <property name="source-dir" value="src"/>
-    <property name="build-dir" value="build"/>
-    <property name="site-dir" value="site"/>
+    <property name="source-dir" value="${src-dir}/main/javascript/"/>
+    <property name="test-dir" value="${src-dir}/test/javascript"/>
 
-    <property name="concat-target" value="GameOne-concat.js"/>
-    <property name="preprocess-target" value="GameOne-preprocess.js"/>
-    <property name="dev-target" value="GameOne-debug.js"/>
-    <property name="rel-target" value="GameOne.js"/>
+    <property name="concat-target" value="crx-concat.js"/>
+    <property name="preprocess-target" value="crx-preprocess.js"/>
+    <property name="dev-target" value="crx-debug.js"/>
+    <property name="rel-target" value="crx.js"/>
 
     <target name="js-concatenate" depends="init">
         <concat destfile="${build-dir}/${concat-target}">
             <!-- file order is important -->
-            <fileset dir="${source-dir}" includes="macros.h" />
+            <fileset dir="${source-dir}" includes="macros.js" />
             <fileset dir="${source-dir}" includes="math.js" />
             <fileset dir="${source-dir}" includes="vector2d.js" />
             <fileset dir="${source-dir}" includes="particle.js" />
@@ -26,7 +25,16 @@
             <fileset dir="${source-dir}" includes="container.js" />
             <fileset dir="${source-dir}" includes="shell.js" />
             <fileset dir="${source-dir}" includes="game.js" />
-            <fileset dir="${source-dir}" includes="test.js" />
+
+            <!-- debug files -->
+
+            <fileset dir="${test-dir}" includes="test.js" />
+            <fileset dir="${test-dir}" includes="goto.js" />
+            <fileset dir="${test-dir}" includes="gotoward.js" />
+            <fileset dir="${test-dir}" includes="pointat.js" />
+            <fileset dir="${test-dir}" includes="keycontrols.js" />
+            <fileset dir="${test-dir}" includes="simpleconstraints.js" />
+            <fileset dir="${test-dir}" includes="viewport.js" />
         </concat>
     </target>
 </project>

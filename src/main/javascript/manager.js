@@ -12,8 +12,8 @@ var Manager = function () {
     }
 
     _.removeParticle = function (id) {
-        // we don't want to change the id of other objects, but we want to 
-        // remove this particle from the store - this is not the classic 
+        // we don't want to change the id of other objects, but we want to
+        // remove this particle from the store - this is not the classic
         // javascript way to remove an element from an array
         delete particles[id];
     }
@@ -28,8 +28,8 @@ var Manager = function () {
     }
 
     _.removeConstraint = function (id) {
-        // we don't want to change the id of other objects, but we want to 
-        // remove this constraint from the store - this is not the classic 
+        // we don't want to change the id of other objects, but we want to
+        // remove this constraint from the store - this is not the classic
         // javascript way to remove an element from an array
         delete constraints[id];
     }
@@ -44,8 +44,8 @@ var Manager = function () {
     }
 
     _.removeThing = function (id) {
-        // we don't want to change the id of other objects, but we want to 
-        // remove this thing from the store - this is not the classic 
+        // we don't want to change the id of other objects, but we want to
+        // remove this thing from the store - this is not the classic
         // javascript way to remove an element from an array
         delete things[id];
     }
@@ -63,7 +63,7 @@ var Manager = function () {
             var delta = a.position.subtract(b.position);
             var d = delta.normalize();
 
-            // compute the relative velocity damping to apply, the goal 
+            // compute the relative velocity damping to apply, the goal
             // here is to halt all relative motion between the particles
             var relativeVelocity = a.velocity.subtract(b.velocity);
             var springVelocity = relativeVelocity.dot(delta);
@@ -72,9 +72,9 @@ var Manager = function () {
             var velocityDampingForceB = 0.5 * (b.mass / totalMass) * springVelocity * totalMass / deltaTime;
 
             // compute a spring force to make d be equal to constraint.d,
-            // using Hooke's law
+            // using Hooke's law, 2.0 seems to work well
             var x = d - constraint.d;
-            var k = 1;
+            var k = 2.0;
             var springForce = k * x;
 
             // apply the forces
