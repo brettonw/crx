@@ -7,6 +7,19 @@ function preInitGame(container) {
     // get the game functions list, sorted alphabetically
     var gameNames = container.getGameNames ();
 
+    // determine what page should load after verification
+    var location = new String(window.location);
+    console.log("URL (" + location + ")");
+    var targetIndex = location.search("#");
+    if (targetIndex >= 0) {
+        var target = location.substring(targetIndex + 1);
+        var targetGameIndex = target.toLowerCase().charCodeAt(0) - "a".charCodeAt(0);
+        if ((targetGameIndex >= 0) && (targetGameIndex < gameNames.length)) {
+            console.log("URL (" + location + ") Target (" + target + ") at index (" + targetGameIndex + ")");
+            gameNames = [gameNames[targetGameIndex]];
+        }
+    }
+
     // display a list...
     if (gameNames.length > 1) {
         var gameList = document.createElement ("div");

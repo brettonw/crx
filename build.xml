@@ -27,7 +27,6 @@
             <fileset dir="${source-dir}" includes="game.js" />
 
             <!-- debug files -->
-
             <fileset dir="${test-dir}" includes="test.js" />
             <fileset dir="${test-dir}" includes="goto.js" />
             <fileset dir="${test-dir}" includes="gotoward.js" />
