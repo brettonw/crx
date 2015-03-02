@@ -85,28 +85,43 @@ var Particle = function () {
 }();
 var Thing = function () {
     var _ = Object.create(null);
-    var points = [
-        Vector2d.xy(-0.05, 0.05),
-        Vector2d.xy(-0.05, -0.05),
-        Vector2d.xy(0.10, 0.00)
-    ];
+    _.geometry = function () {
+        var geometry = Object.create(null);
+        geometry.density = 3183;
+        var computeRadius = function (mass) {
+            return Math.sqrt(mass / (Math.PI * geometry.density));
+        }
+        geometry.points = [
+            { "pt": Vector2d.xy(-0.05, 0.05), "radius": computeRadius(1.0) },
+            { "pt": Vector2d.zero(), "radius": computeRadius(2.0) },
+            { "pt": Vector2d.xy(-0.05, -0.05), "radius": computeRadius(1.0) },
+            { "pt": Vector2d.xy(0.10, 0.00), "radius": computeRadius(1.0) }
+        ];
+        geometry.constraints = [[0, 1], [1, 2], [2, 3], [3, 0], [3, 1]];
+        geometry.computeXAxis = function (particles) {
+            var midpoint = particles[0].position
+                .add(particles[2].position)
+                .scale(0.5);
+            return particles[3].position
+                .subtract(midpoint).normalized();
+        }
+        return geometry;
+    }();
     _.updateFrameOfReference = function (deltaTime) {
-        var scope = this;
         var particles = this.particles;
-        var position = particles[0].position
-            .add(particles[1].position)
-            .add(particles[2].position)
-            .scale(1.0 / 3.0);
+        var count = particles.length;
+        var geometry = this.geometry;
+        var points = geometry.points;
+        var position = Vector2d.zero();
+        for (var i = 0; i < count; ++i) {
+            position = position.add (particles[i].position);
+        };
+        position = position.scale(1.0 / count);
         this.velocity = position
             .subtract(this.position)
             .scale(1.0 / deltaTime);
         this.position = position;
-        var midpoint = particles[0].position
-            .add(particles[1].position)
-            .scale(0.5);
-        var xAxis = particles[2].position
-            .subtract(midpoint).normalized();
-        var yAxis = xAxis.perpendicular();
+        var xAxis = geometry.computeXAxis (particles);
         var spinPosition = Math.atan2(xAxis.y, xAxis.x);
         var deltaSpinPosition = spinPosition - this.spinPosition;
      while (deltaSpinPosition > Math.PI) {
@@ -117,26 +132,25 @@ var Thing = function () {
         }
         this.spinVelocity = deltaSpinPosition / deltaTime;
         this.spinPosition = spinPosition;
-        var resetParticle = function (i) {
-            particles[i].position = scope.position
-                .add(xAxis.scale(points[i].x))
-                .add(yAxis.scale(points[i].y));
+        var yAxis = xAxis.perpendicular();
+        for (var i = 0; i < count; ++i) {
+            particles[i].position = position
+                .add(xAxis.scale(points[i].pt.x))
+                .add(yAxis.scale(points[i].pt.y));
         }
-        resetParticle(0);
-        resetParticle(1);
-        resetParticle(2);
     }
     _.reset = function (position, spinPosition) {
-        var scope = this;
+        var particles = this.particles;
+        var count = particles.length;
+        var points = this.geometry.points;
         var xAxis = Vector2d.angle(spinPosition);
         var yAxis = xAxis.perpendicular();
-        var particle = function (i) {
-            scope.particles[i].reset(position
-                .add(xAxis.scale(points[i].x))
-                .add(yAxis.scale(points[i].y))
+        for (var i = 0; i < count; ++i) {
+            particles[i].reset(position
+                .add(xAxis.scale(points[i].pt.x))
+                .add(yAxis.scale(points[i].pt.y))
                 );
         }
-        particle(0); particle(1); particle(2);
         this.position = position;
         this.velocity = Vector2d.zero();
         this.spinPosition = spinPosition;
@@ -145,38 +159,41 @@ var Thing = function () {
     }
     _.init = function (name, position, spinPosition) {
         this.name = name;
-        var particle = function (i) {
-            var r = 0.01, d = 300;
-            return Object.create(Particle).init(name + "-" + i, Vector2d.zero (), r, d);
+        this.mass = 0;
+        var particles = this.particles = [];
+        var geometry = this.geometry;
+        var points = geometry.points;
+        for (var i = 0, count = points.length; i < count; ++i) {
+            var particle = Object.create(Particle).init(name + "-" + i, Vector2d.zero(), points[i].radius, geometry.density);
+            this.mass += particle.mass;
+            particles.push(Manager.addParticle(particle));
         }
-        this.particles = [
-            Manager.addParticle(particle(0)),
-            Manager.addParticle(particle(1)),
-            Manager.addParticle(particle(2)),
-        ];
-        this.mass = this.particles[0].mass + this.particles[1].mass + this.particles[2].mass;
-        var scope = this;
-        var constrain = function (a, b) {
-            var id_a = scope.particles[a].id;
-            var id_b = scope.particles[b].id;
-            Manager.addConstraint(id_a, id_b, points[a].subtract(points[b]).norm());
+        var constraints = geometry.constraints;
+        for (var i = 0, count = constraints.length; i < count; ++i) {
+            var a = constraints[i][0];
+            var b = constraints[i][1];
+            var id_a = particles[a].id;
+            var id_b = particles[b].id;
+            Manager.addConstraint(id_a, id_b, points[a].pt.subtract(points[b].pt).norm(), 0.5, 2.0);
         }
-        constrain(0, 1); constrain(1, 2); constrain(2, 0);
         this.reset(position, spinPosition);
         Manager.addThing(this);
         return this;
     }
     _.makeGeometry = function (container) {
-        this.particles[0].makeGeometry(container);
-        this.particles[1].makeGeometry(container);
-        this.particles[2].makeGeometry(container);
-        var points = this.particles[0].position.toString() + " " +
-                     this.particles[1].position.toString() + " " +
-                     this.particles[2].position.toString();
+        var particles = this.particles;
+        var count = particles.length;
+        for (var i = 0; i < count; ++i) {
+            particles[i].makeGeometry(container);
+        }
+        var pointsDesc = particles[0].position.toString();
+        for (var i = 1; i < count; ++i) {
+            pointsDesc += " " + particles[i].position.toString();
+        }
         this.svg = container.append("polygon")
             .attr("fill", "red")
             .attr("fill-opacity", 0.33)
-            .attr("points", points);
+            .attr("points", pointsDesc);
         this.svgLine = container.append("line")
             .attr("stroke", "blue")
             .attr("stroke-opacity", 0.33)
@@ -194,9 +211,10 @@ var Thing = function () {
             .attr("y1", 0)
             .attr("x2", this.velocity.x)
             .attr("y2", this.velocity.y);
-        this.particles[0].paint();
-        this.particles[1].paint();
-        this.particles[2].paint();
+        var particles = this.particles;
+        for (var i = 0, count = particles.length; i < count; ++i) {
+            particles[i].paint();
+        }
     }
     return _;
 }();
@@ -205,7 +223,7 @@ var Ship = function () {
     _.init = function (name, position, spinPosition) {
         Object.getPrototypeOf(_).init.call(this, name, Vector2d.zero(), 0);
         this.stunnedTime = 0;
-        this.thrustRatio = 15;
+        this.thrustRatio = 21;
         this.learn ();
         this.reset (position, spinPosition);
         return this;
@@ -244,7 +262,7 @@ var Ship = function () {
             var leftThrustVector = orientationVector.scale(thrustScaling * left);
             var rightThrustVector = orientationVector.scale(thrustScaling * right);
             this.particles[0].applyAcceleration(leftThrustVector);
-            this.particles[1].applyAcceleration(rightThrustVector);
+            this.particles[2].applyAcceleration(rightThrustVector);
         }
     }
     _.point = function (direction) {
@@ -325,9 +343,9 @@ var Manager = function () {
     }
     var constraints = [];
     var nextConstraint = 0;
-    _.addConstraint = function (a, b, d) {
+    _.addConstraint = function (a, b, length, damping, k) {
         var id = nextConstraint++;
-        constraints.push({ "a": a, "b": b, "d": d });
+        constraints.push({ "a": a, "b": b, "length": length, "damping": damping, "k":k });
         return id;
     }
     _.removeConstraint = function (id) {
@@ -351,15 +369,13 @@ var Manager = function () {
             var a = particles[constraint.a];
             var b = particles[constraint.b];
             var delta = a.position.subtract(b.position);
-            var d = delta.normalize();
+            var length = delta.normalize();
             var relativeVelocity = a.velocity.subtract(b.velocity);
             var springVelocity = relativeVelocity.dot(delta);
             var totalMass = a.mass + b.mass;
-            var velocityDampingForceA = 0.5 * (a.mass / totalMass) * springVelocity * totalMass / deltaTime;
-            var velocityDampingForceB = 0.5 * (b.mass / totalMass) * springVelocity * totalMass / deltaTime;
-            var x = d - constraint.d;
-            var k = 2.0;
-            var springForce = k * x;
+            var velocityDampingForceA = constraint.damping * (a.mass / totalMass) * springVelocity * totalMass / deltaTime;
+            var velocityDampingForceB = constraint.damping * (b.mass / totalMass) * springVelocity * totalMass / deltaTime;
+            var springForce = constraint.k * (length - constraint.length);
             var FA = springForce + velocityDampingForceA;
             var FB = springForce + velocityDampingForceB;
             a.applyForce(delta.scale(-FA));
@@ -718,71 +734,10 @@ var TestContainer = function () {
     var _ = Object.create(Container);
     return _;
 }();
-TestContainer.addGame("Go To", function (ship) {
-        var ship;
+TestContainer.addGame("Viewport", function (ship) {
         return {
-            "setup": function (container) {
-                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
-            },
-            "play": function () {
-                if (GameKeys.isDown(GameKeys.codes.upArrow)) {
-                    ship.goTo(GameKeys.targetPt);
-                } else {
-                    ship.stop();
-                }
-            },
-            "finish": function () { }
-        };
-    }());
-TestContainer.addGame("Go Toward", function (ship) {
-        var ship;
-        return {
-            "setup": function (container) {
-                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
-            },
-            "play": function () {
-                if (GameKeys.isDown(GameKeys.codes.upArrow)) {
-                    var targetGo = GameKeys.targetPt.subtract(ship.position);
-                    ship.go(targetGo);
-                } else {
-                    ship.stop();
-                }
-            },
-            "finish": function () { }
-        };
-    }());
-TestContainer.addGame("Point At", function (ship) {
-        var ship;
-        return {
-            "setup": function (container) {
-                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
-            },
-            "play": function () {
-                var deltaSpinPosition = ship.pointAt(GameKeys.targetPt);
-                if (GameKeys.isDown(GameKeys.codes.upArrow)) {
-                    ship.thrust(1.0, 1.0);
-                }
-            },
-            "finish": function () { }
-        };
-    }());
-TestContainer.addGame("Key Controls", function (ship) {
-        var ship;
-        return {
-            "setup": function (container) {
-                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
-            },
-            "play": function () {
-                var leftThrust = 0.0;
-                var rightThrust = 0.0;
-                if (GameKeys.isDown(GameKeys.codes.upArrow)) { leftThrust += 1.0; rightThrust += 1.0; }
-                if (GameKeys.isDown(GameKeys.codes.downArrow)) { leftThrust += -0.5; rightThrust += -0.5; }
-                if (GameKeys.isDown(GameKeys.codes.rightArrow)) { leftThrust += 0.5; rightThrust += -0.5; }
-                if (GameKeys.isDown(GameKeys.codes.leftArrow)) { leftThrust += -0.5; rightThrust += 0.5; }
-                leftThrust = Math.max(-1.0, leftThrust); leftThrust = Math.min(1.0, leftThrust);
-                rightThrust = Math.max(-1.0, rightThrust); rightThrust = Math.min(1.0, rightThrust);
-                ship.thrust(leftThrust, rightThrust);
-            },
+            "setup": function (container) { },
+            "play": function () { },
             "finish": function () { }
         };
     }());
@@ -808,7 +763,7 @@ TestContainer.addGame("Simple Constraints", function (ship) {
                 var constrain = function (a, b) {
                     var id_a = particles[a].id;
                     var id_b = particles[b].id;
-                    Manager.addConstraint(id_a, id_b, points[a].subtract(points[b]).norm());
+                    Manager.addConstraint(id_a, id_b, points[a].subtract(points[b]).norm(), 0.5, 2.0);
                 }
                 constrain(0, 1); constrain(1, 2); constrain(2, 0);
                 var points = particles[0].position.toString() + " " +
@@ -846,10 +801,136 @@ TestContainer.addGame("Simple Constraints", function (ship) {
             "finish": function () { }
         };
     }());
-TestContainer.addGame("Viewport", function (ship) {
+TestContainer.addGame("More Constraints", function (ship) {
+        var particles;
+        var svg;
         return {
-            "setup": function (container) { },
-            "play": function () { },
+            "setup": function (container) {
+                var points = [
+                    Vector2d.xy(-0.05, 0.05),
+                    Vector2d.xy(0, 0),
+                    Vector2d.xy(-0.05, -0.05),
+                    Vector2d.xy(0.10, 0.00)
+                ];
+                var particle = function (i) {
+                    var r = 0.01, d = 300;
+                    return Object.create(Particle).init("Point-" + i, points[i], r, d).makeGeometry(container);
+                }
+                particles = [
+                     Manager.addParticle(particle(0)),
+                     Manager.addParticle(particle(1)),
+                     Manager.addParticle(particle(2)),
+                     Manager.addParticle(particle(3)),
+                ];
+                var constrain = function (a, b) {
+                    var id_a = particles[a].id;
+                    var id_b = particles[b].id;
+                    Manager.addConstraint(id_a, id_b, points[a].subtract(points[b]).norm(), 0.5, 2.0);
+                }
+                constrain(0, 1); constrain(1, 2); constrain(0, 2); constrain(2, 3); constrain(3, 0); constrain(1, 3);
+                var points = particles[0].position.toString() + " " +
+                             particles[1].position.toString() + " " +
+                             particles[2].position.toString() + " " +
+                             particles[3].position.toString();
+                svg = container.append("polygon")
+                    .attr("fill", "red")
+                    .attr("fill-opacity", 0.33)
+                    .attr("points", points);
+            },
+            "play": function () {
+                var position = particles[0].position
+                    .add(particles[1].position)
+                    .add(particles[2].position)
+                    .add(particles[3].position)
+                    .scale(1.0 / particles.length);
+                var midpoint = particles[0].position
+                    .add(particles[2].position)
+                    .scale(0.5);
+                var xAxis = particles[3].position
+                    .subtract(midpoint).normalized();
+                var spinPosition = Math.atan2(xAxis.y, xAxis.x);
+                svg.attr("transform", "translate(" + position.x + "," + position.y + ") rotate(" + (spinPosition * (180.0 / Math.PI)) + ", 0, 0)");
+                particles[0].paint();
+                particles[1].paint();
+                particles[2].paint();
+                particles[3].paint();
+                if (GameKeys.isDown(GameKeys.codes.rightArrow)) {
+                    particles[0].applyAcceleration(xAxis.scale(1));
+                    particles[2].applyAcceleration(xAxis.scale(-1));
+                }
+                if (GameKeys.isDown(GameKeys.codes.leftArrow)) {
+                    particles[0].applyAcceleration(xAxis.scale(-1));
+                    particles[2].applyAcceleration(xAxis.scale(1));
+                }
+            },
+            "finish": function () { }
+        };
+    }());
+TestContainer.addGame("Key Controls", function (ship) {
+        var ship;
+        return {
+            "setup": function (container) {
+                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
+            },
+            "play": function () {
+                var leftThrust = 0.0;
+                var rightThrust = 0.0;
+                if (GameKeys.isDown(GameKeys.codes.upArrow)) { leftThrust += 1.0; rightThrust += 1.0; }
+                if (GameKeys.isDown(GameKeys.codes.downArrow)) { leftThrust += -0.5; rightThrust += -0.5; }
+                if (GameKeys.isDown(GameKeys.codes.rightArrow)) { leftThrust += 0.5; rightThrust += -0.5; }
+                if (GameKeys.isDown(GameKeys.codes.leftArrow)) { leftThrust += -0.5; rightThrust += 0.5; }
+                leftThrust = Math.max(-1.0, leftThrust); leftThrust = Math.min(1.0, leftThrust);
+                rightThrust = Math.max(-1.0, rightThrust); rightThrust = Math.min(1.0, rightThrust);
+                ship.thrust(leftThrust, rightThrust);
+            },
+            "finish": function () { }
+        };
+    }());
+TestContainer.addGame("Point At", function (ship) {
+        var ship;
+        return {
+            "setup": function (container) {
+                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
+            },
+            "play": function () {
+                var deltaSpinPosition = ship.pointAt(GameKeys.targetPt);
+                if (GameKeys.isDown(GameKeys.codes.upArrow)) {
+                    ship.thrust(1.0, 1.0);
+                }
+            },
+            "finish": function () { }
+        };
+    }());
+TestContainer.addGame("Go Toward", function (ship) {
+        var ship;
+        return {
+            "setup": function (container) {
+                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
+            },
+            "play": function () {
+                if (GameKeys.isDown(GameKeys.codes.upArrow)) {
+                    var targetGo = GameKeys.targetPt.subtract(ship.position);
+                    ship.go(targetGo);
+                } else {
+                    ship.stop();
+                }
+            },
+            "finish": function () { }
+        };
+    }());
+TestContainer.addGame("Go To", function (ship) {
+        var ship;
+        return {
+            "setup": function (container) {
+                ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
+            },
+            "play": function () {
+                if (GameKeys.isDown(GameKeys.codes.upArrow)) {
+                    ship.goTo(GameKeys.targetPt);
+                } else {
+                    ship.stop();
+                }
+            },
             "finish": function () { }
         };
     }());

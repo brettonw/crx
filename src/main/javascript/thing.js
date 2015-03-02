@@ -1,40 +1,64 @@
 var Thing = function () {
     var _ = Object.create(null);
 
-    // the points to define the geometry
-    var points = [
-        Vector2d.xy(-0.05, 0.05),
-        Vector2d.xy(-0.05, -0.05),
-        Vector2d.xy(0.10, 0.00)
-    ];
+    // define the geometry
+    _.geometry = function () {
+        var geometry = Object.create(null);
+
+        geometry.density = 3183;
+
+        var computeRadius = function (mass) {
+            // m = pi r^2 d
+            return Math.sqrt(mass / (Math.PI * geometry.density));
+        }
+
+        geometry.points = [
+            { "pt": Vector2d.xy(-0.05, 0.05), "radius": computeRadius(1.0) },
+            { "pt": Vector2d.zero(), "radius": computeRadius(2.0) },
+            { "pt": Vector2d.xy(-0.05, -0.05), "radius": computeRadius(1.0) },
+            { "pt": Vector2d.xy(0.10, 0.00), "radius": computeRadius(1.0) }
+        ];
+        geometry.constraints = [[0, 1], [1, 2], [2, 3], [3, 0], [3, 1]];
+
+        geometry.computeXAxis = function (particles) {
+            // the frame of reference is computed as the line between [0,2] and
+            // [3,midpoint(0,2)], we might need to do a "polish" step on this in
+            // case those lines aren't actually perpendicular in the simulation
+            var midpoint = particles[0].position
+                .add(particles[2].position)
+                .scale(0.5);
+            return particles[3].position
+                .subtract(midpoint).normalized();
+        }
+
+        return geometry;
+    }();
 
     // incorporate the aggregate result of our particle cluster simulation to
     // show the larger object behavior. we include measuring velocities and
     // acceleration of the aggregate object
     _.updateFrameOfReference = function (deltaTime) {
-        var scope = this;
         var particles = this.particles;
+        var count = particles.length;
+        var geometry = this.geometry;
+        var points = geometry.points;
 
         // the frame of reference sets the position at the centroid of the
         // particle cluster
-        var position = particles[0].position
-            .add(particles[1].position)
-            .add(particles[2].position)
-            .scale(1.0 / 3.0);
+        var position = Vector2d.zero();
+        for (var i = 0; i < count; ++i) {
+            position = position.add (particles[i].position);
+        };
+        position = position.scale(1.0 / count);
+
+        // the velocity is measured as the delta from the last update
         this.velocity = position
             .subtract(this.position)
             .scale(1.0 / deltaTime);
         this.position = position;
 
-        // the frame of reference is computed as the line between [0,1] and
-        // [2,midpoint(0,1)], we might need to do a "polish" step on this in
-        // case those lines aren't actually perpendicular in the simulation
-        var midpoint = particles[0].position
-            .add(particles[1].position)
-            .scale(0.5);
-        var xAxis = particles[2].position
-            .subtract(midpoint).normalized();
-        var yAxis = xAxis.perpendicular();
+        // compute the axis vectors
+        var xAxis = geometry.computeXAxis (particles);
 
         // the spin position has to be calculated carefully because of the
         // roll over of the coordinate system at pi/-pi, we assume that the
@@ -48,35 +72,36 @@ var Thing = function () {
         while (deltaSpinPosition < -Math.PI) {
             deltaSpinPosition += (Math.PI * 2.0);
         }
+
+        // the spin velocity is measured as the delta from the last update
         this.spinVelocity = deltaSpinPosition / deltaTime;
         this.spinPosition = spinPosition;
 
         // reset the particles to be where they are supposed to be, this is
         // kind of cheating, but it resolves the drift problem that can only
         // be fixed by going to much higher simulation rates
-        var resetParticle = function (i) {
-            particles[i].position = scope.position
-                .add(xAxis.scale(points[i].x))
-                .add(yAxis.scale(points[i].y));
+        var yAxis = xAxis.perpendicular();
+        for (var i = 0; i < count; ++i) {
+            particles[i].position = position
+                .add(xAxis.scale(points[i].pt.x))
+                .add(yAxis.scale(points[i].pt.y));
         }
-        resetParticle(0);
-        resetParticle(1);
-        resetParticle(2);
     }
 
     _.reset = function (position, spinPosition) {
-        var scope = this;
+        var particles = this.particles;
+        var count = particles.length;
+        var points = this.geometry.points;
 
         // reset the particles
         var xAxis = Vector2d.angle(spinPosition);
         var yAxis = xAxis.perpendicular();
-        var particle = function (i) {
-            scope.particles[i].reset(position
-                .add(xAxis.scale(points[i].x))
-                .add(yAxis.scale(points[i].y))
+        for (var i = 0; i < count; ++i) {
+            particles[i].reset(position
+                .add(xAxis.scale(points[i].pt.x))
+                .add(yAxis.scale(points[i].pt.y))
                 );
         }
-        particle(0); particle(1); particle(2);
 
         // set the initial frame of reference
         this.position = position;
@@ -92,25 +117,25 @@ var Thing = function () {
         this.name = name;
 
         // create the particle list
-        var particle = function (i) {
-            var r = 0.01, d = 300;
-            return Object.create(Particle).init(name + "-" + i, Vector2d.zero (), r, d);
+        this.mass = 0;
+        var particles = this.particles = [];
+        var geometry = this.geometry;
+        var points = geometry.points;
+        for (var i = 0, count = points.length; i < count; ++i) {
+            var particle = Object.create(Particle).init(name + "-" + i, Vector2d.zero(), points[i].radius, geometry.density);
+            this.mass += particle.mass;
+            particles.push(Manager.addParticle(particle));
         }
-        this.particles = [
-            Manager.addParticle(particle(0)),
-            Manager.addParticle(particle(1)),
-            Manager.addParticle(particle(2)),
-        ];
-        this.mass = this.particles[0].mass + this.particles[1].mass + this.particles[2].mass;
 
         // create the constraint list
-        var scope = this;
-        var constrain = function (a, b) {
-            var id_a = scope.particles[a].id;
-            var id_b = scope.particles[b].id;
-            Manager.addConstraint(id_a, id_b, points[a].subtract(points[b]).norm());
+        var constraints = geometry.constraints;
+        for (var i = 0, count = constraints.length; i < count; ++i) {
+            var a = constraints[i][0];
+            var b = constraints[i][1];
+            var id_a = particles[a].id;
+            var id_b = particles[b].id;
+            Manager.addConstraint(id_a, id_b, points[a].pt.subtract(points[b].pt).norm(), 0.5, 2.0);
         }
-        constrain(0, 1); constrain(1, 2); constrain(2, 0);
 
         // set everything for the first run
         this.reset(position, spinPosition);
@@ -121,19 +146,23 @@ var Thing = function () {
     }
 
     _.makeGeometry = function (container) {
+        var particles = this.particles;
+        var count = particles.length;
+
         // add the particles so I can see them
-        this.particles[0].makeGeometry(container);
-        this.particles[1].makeGeometry(container);
-        this.particles[2].makeGeometry(container);
+        for (var i = 0; i < count; ++i) {
+            particles[i].makeGeometry(container);
+        }
 
         // add a ghost of my intended shape
-        var points = this.particles[0].position.toString() + " " +
-                     this.particles[1].position.toString() + " " +
-                     this.particles[2].position.toString();
+        var pointsDesc = particles[0].position.toString();
+        for (var i = 1; i < count; ++i) {
+            pointsDesc += " " + particles[i].position.toString();
+        }
         this.svg = container.append("polygon")
             .attr("fill", "red")
             .attr("fill-opacity", 0.33)
-            .attr("points", points);
+            .attr("points", pointsDesc);
 
         // add a line for the velocity vector
         this.svgLine = container.append("line")
@@ -161,10 +190,11 @@ var Thing = function () {
             .attr("x2", this.velocity.x)
             .attr("y2", this.velocity.y);
 
-        // update the particles
-        this.particles[0].paint();
-        this.particles[1].paint();
-        this.particles[2].paint();
+        // paint the particles so I can see them
+        var particles = this.particles;
+        for (var i = 0, count = particles.length; i < count; ++i) {
+            particles[i].paint();
+        }
     }
 
     return _;

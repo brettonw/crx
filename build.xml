@@ -28,12 +28,13 @@
 
             <!-- debug files -->
             <fileset dir="${test-dir}" includes="test.js" />
-            <fileset dir="${test-dir}" includes="goto.js" />
-            <fileset dir="${test-dir}" includes="gotoward.js" />
-            <fileset dir="${test-dir}" includes="pointat.js" />
-            <fileset dir="${test-dir}" includes="keycontrols.js" />
-            <fileset dir="${test-dir}" includes="simpleconstraints.js" />
             <fileset dir="${test-dir}" includes="viewport.js" />
+            <fileset dir="${test-dir}" includes="simpleconstraints.js" />
+            <fileset dir="${test-dir}" includes="moreconstraints.js" />
+            <fileset dir="${test-dir}" includes="keycontrols.js" />
+            <fileset dir="${test-dir}" includes="pointat.js" />
+            <fileset dir="${test-dir}" includes="gotoward.js" />
+            <fileset dir="${test-dir}" includes="goto.js" />
         </concat>
     </target>
 </project>

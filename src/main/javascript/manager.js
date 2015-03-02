@@ -21,9 +21,10 @@ var Manager = function () {
     var constraints = [];
     var nextConstraint = 0;
 
-    _.addConstraint = function (a, b, d) {
+    _.addConstraint = function (a, b, length, damping, k) {
         var id = nextConstraint++;
-        constraints.push({ "a": a, "b": b, "d": d });
+        // good defaults, damping: 0.5, k: 2.0
+        constraints.push({ "a": a, "b": b, "length": length, "damping": damping, "k":k });
         return id;
     }
 
@@ -61,21 +62,19 @@ var Manager = function () {
             var a = particles[constraint.a];
             var b = particles[constraint.b];
             var delta = a.position.subtract(b.position);
-            var d = delta.normalize();
+            var length = delta.normalize();
 
             // compute the relative velocity damping to apply, the goal
             // here is to halt all relative motion between the particles
             var relativeVelocity = a.velocity.subtract(b.velocity);
             var springVelocity = relativeVelocity.dot(delta);
             var totalMass = a.mass + b.mass;
-            var velocityDampingForceA = 0.5 * (a.mass / totalMass) * springVelocity * totalMass / deltaTime;
-            var velocityDampingForceB = 0.5 * (b.mass / totalMass) * springVelocity * totalMass / deltaTime;
+            var velocityDampingForceA = constraint.damping * (a.mass / totalMass) * springVelocity * totalMass / deltaTime;
+            var velocityDampingForceB = constraint.damping * (b.mass / totalMass) * springVelocity * totalMass / deltaTime;
 
-            // compute a spring force to make d be equal to constraint.d,
+            // compute a spring force to make length be equal to constraint.length,
             // using Hooke's law, 2.0 seems to work well
-            var x = d - constraint.d;
-            var k = 2.0;
-            var springForce = k * x;
+            var springForce = constraint.k * (length - constraint.length);
 
             // apply the forces
             var FA = springForce + velocityDampingForceA;

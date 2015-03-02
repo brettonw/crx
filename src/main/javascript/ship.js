@@ -8,9 +8,9 @@ var Ship = function () {
         // the ship should not be stunned to start
         this.stunnedTime = 0;
 
-        // two engines capable of overcoming gravity applied to three
-        // particle masses g * 3 / 2... = 14.75
-        this.thrustRatio = 15;
+        // two engines capable of overcoming gravity applied to four
+        // particle masses g * 4 / 2... = 14.75
+        this.thrustRatio = 21;
 
         this.learn ();
         this.reset (position, spinPosition);
@@ -63,7 +63,7 @@ var Ship = function () {
 
             // engines are assumed to be (left) particle 0, and (right) particle 1
             this.particles[0].applyAcceleration(leftThrustVector);
-            this.particles[1].applyAcceleration(rightThrustVector);
+            this.particles[2].applyAcceleration(rightThrustVector);
         }
     }
 
