@@ -11,11 +11,12 @@
     <property name="dev-target" value="crx-debug.js"/>
     <property name="rel-target" value="crx.js"/>
 
-    <target name="js-concatenate" depends="init">
+    <target name="js-concatenate-common" depends="init">
         <concat destfile="${build-dir}/${concat-target}">
             <!-- file order is important -->
             <fileset dir="${source-dir}" includes="macros.js" />
             <fileset dir="${source-dir}" includes="math.js" />
+            <fileset dir="${source-dir}" includes="constants.js" />
             <fileset dir="${source-dir}" includes="vector2d.js" />
             <fileset dir="${source-dir}" includes="particle.js" />
             <fileset dir="${source-dir}" includes="thing.js" />
@@ -25,8 +26,12 @@
             <fileset dir="${source-dir}" includes="container.js" />
             <fileset dir="${source-dir}" includes="shell.js" />
             <fileset dir="${source-dir}" includes="game.js" />
+        </concat>
+    </target>
 
-            <!-- debug files -->
+    <target name="dev-js-concatenate" depends="js-concatenate-common">
+        <concat destfile="${build-dir}/${concat-target}" append="true">
+            <!-- debug files,  file order is important -->
             <fileset dir="${test-dir}" includes="test.js" />
             <fileset dir="${test-dir}" includes="viewport.js" />
             <fileset dir="${test-dir}" includes="simpleconstraints.js" />
@@ -36,5 +41,8 @@
             <fileset dir="${test-dir}" includes="gotoward.js" />
             <fileset dir="${test-dir}" includes="goto.js" />
         </concat>
+    </target>
+
+    <target name="rel-js-concatenate" depends="js-concatenate-common">
     </target>
 </project>

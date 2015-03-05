@@ -2,6 +2,12 @@
 Math.sgn = function (value) {
     return (value < 0.0) ? -1.0 : ((value > 0.0) ? 1.0 : 0.0);
 }
+Math.clamp = function (value, min, max) {
+    return Math.max(Math.min(value, max), min);
+}
+var Constants = {
+    G: -9.8
+}
 var Vector2d = function () {
     var _ = Object.create(null);
     var makeVector = function (x, y) {
@@ -93,7 +99,7 @@ var Thing = function () {
         }
         geometry.points = [
             { "pt": Vector2d.xy(-0.05, 0.05), "radius": computeRadius(1.0) },
-            { "pt": Vector2d.zero(), "radius": computeRadius(2.0) },
+            { "pt": Vector2d.zero(), "radius": computeRadius(1.0) },
             { "pt": Vector2d.xy(-0.05, -0.05), "radius": computeRadius(1.0) },
             { "pt": Vector2d.xy(0.10, 0.00), "radius": computeRadius(1.0) }
         ];
@@ -223,7 +229,8 @@ var Ship = function () {
     _.init = function (name, position, spinPosition) {
         Object.getPrototypeOf(_).init.call(this, name, Vector2d.zero(), 0);
         this.stunnedTime = 0;
-        this.thrustRatio = 21;
+        this.thrustRatio = 1.1 * ((this.particles.length * -Constants.G) / 2.0);
+        this.thrustRatio *= 0.1;
         this.learn ();
         this.reset (position, spinPosition);
         return this;
@@ -250,6 +257,12 @@ var Ship = function () {
         report();
         this.thrust(-1, 1);
         report();
+        this.thrust(-1, 1);
+        report();
+        this.thrust(1, -1);
+        report();
+        this.thrust(1, -1);
+        report();
         this.thrust(1, -1);
         report();
         this.spinAcceleration = accumulator / accumulatorCount;
@@ -275,12 +288,17 @@ var Ship = function () {
             deltaSpinPosition += (Math.PI * 2.0);
         }
         var deltaSpinPositionMagnitude = Math.abs (deltaSpinPosition);
-        var timeToTargetSpinPosition = 0.15 * (1 + deltaSpinPositionMagnitude);
-        var velocityToTargetSpinPosition = (deltaSpinPosition / timeToTargetSpinPosition);
-        var deltaVelocityNeeded = velocityToTargetSpinPosition - this.spinVelocity;
-        var thrustNeeded = deltaVelocityNeeded / (this.spinAcceleration * 0.5);
-        var clampedThrust = Math.min(Math.max(thrustNeeded, -1.0), 1.0);
-        this.thrust (-clampedThrust, clampedThrust);
+        var accelerationPerFrame = this.spinAcceleration * deltaTime;
+        var spinMagnitudePerFrame = Math.abs(this.spinVelocity * deltaTime);
+        var framesToStop = Math.ceil (spinMagnitudePerFrame / accelerationPerFrame);
+        var framesToDest = (spinMagnitudePerFrame > 0) ? (deltaSpinPositionMagnitude / spinMagnitudePerFrame) : (framesToStop + 1);
+        var thrust = 0;
+        if (framesToStop < framesToDest) {
+            thrust = Math.sgn (deltaSpinPosition);
+        } else {
+            thrust = -Math.sgn (deltaSpinPosition);
+        }
+        this.thrust(-thrust, thrust);
         return deltaSpinPositionMagnitude;
     }
     _.pointAt = function (point) {
@@ -300,7 +318,7 @@ var Ship = function () {
         if ((Math.abs(axisComponent) > 0.001) || (Math.abs(perpComponent) > 0.001)) {
             var pointDirection = axis.scale (axisComponent).add (perp.scale (-perpComponent));
             var deltaSpinPosition = ship.point (pointDirection);
-            var thrustLevel = 1.0 - (deltaSpinPosition / (Math.PI * 0.5));
+            var thrustLevel = 1.0 - (deltaSpinPosition / (Math.PI * 60.0 / 180.0));
             if (thrustLevel > 0) {
                 thrustLevel = Math.pow (thrustLevel, precisionExponent);
                 ship.thrust (thrustLevel, thrustLevel);
@@ -314,10 +332,10 @@ var Ship = function () {
     }
     _.goTo = function (targetPoint) {
         var targetVelocity = targetPoint.subtract (this.position);
-        shipGo (this, targetVelocity, -1.0e3, 0.99, 6.0);
+        shipGo (this, targetVelocity, -1.0e3, 0.99, 2.0);
     }
     _.stop = function () {
-        shipGo (this, Vector2d.zero (), -1.0e3, 1.0, 5.0);
+        shipGo (this, Vector2d.zero (), -1.0e3, 1.0, 10.0);
     }
     _.stun = function (stunnedTime) {
         this.stunnedTime = Math.max(this.stunnedTime, stunnedTime);
@@ -695,12 +713,9 @@ var GameContainer = function () {
             "setup": function (container) {
                 ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
                 Manager.setGravity(function (particle, deltaTime) {
-                    var g = -9.8;
-                    var sy = Math.sgn(particle.position.y);
-                    var y = sy * particle.position.y;
-                    var scale = Math.pow(Math.min(y / 0.25, 1.0), 0.5);
                     if (particle.position.y > 0.0) {
-                        particle.applyAcceleration(Vector2d.xy(0, g * sy * scale));
+                        var scale = Math.pow(Math.min(particle.position.y / 0.25, 1.0), 0.5);
+                        particle.applyAcceleration(Vector2d.xy(0, Constants.G * scale));
                     } else {
                         var groundAccel = Vector2d.xy((-0.5 / deltaTime) * particle.velocity.x, 0);
                         if (particle.velocity.y < 0) {
@@ -893,9 +908,8 @@ TestContainer.addGame("Point At", function (ship) {
                 ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
             },
             "play": function () {
-                var deltaSpinPosition = ship.pointAt(GameKeys.targetPt);
                 if (GameKeys.isDown(GameKeys.codes.upArrow)) {
-                    ship.thrust(1.0, 1.0);
+                    var deltaSpinPosition = ship.pointAt(GameKeys.targetPt);
                 }
             },
             "finish": function () { }

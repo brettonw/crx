@@ -6,16 +6,15 @@ var GameContainer = function () {
         var ship;
         return {
             "setup": function (container) {
+                // create the ships before we implement gravity so they learn 
+                // their capabilities in a vaccuum
                 ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
 
                 // gravity
                 Manager.setGravity(function (particle, deltaTime) {
-                    var g = -9.8;
-                    var sy = Math.sgn(particle.position.y);
-                    var y = sy * particle.position.y;
-                    var scale = Math.pow(Math.min(y / 0.25, 1.0), 0.5);
                     if (particle.position.y > 0.0) {
-                        particle.applyAcceleration(Vector2d.xy(0, g * sy * scale));
+                        var scale = Math.pow(Math.min(particle.position.y / 0.25, 1.0), 0.5);
+                        particle.applyAcceleration(Vector2d.xy(0, Constants.G * scale));
                     } else {
                         var groundAccel = Vector2d.xy((-0.5 / deltaTime) * particle.velocity.x, 0);
                         if (particle.velocity.y < 0) {

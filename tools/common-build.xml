@@ -3,14 +3,14 @@
     <property name="build-dir" value="build"/>
     <property name="site-dir" value="site"/>
 
-    <target name="dev" depends="dev-init, js-copy" description="Development build"/>
+    <target name="dev" depends="dev-init, dev-js-concatenate, js-copy" description="Development build"/>
 
     <target name="dev-init">
         <property name="final-target" value="${dev-target}"/>
         <property name="js-preprocess-switches" value="-DDEBUG"/>
     </target>
 
-    <target name="rel" depends="rel-init, js-minify" description="Release build"/>
+    <target name="rel" depends="rel-init, rel-js-concatenate, js-minify" description="Release build"/>
 
     <target name="rel-init">
         <property name="final-target" value="${rel-target}"/>
@@ -59,7 +59,7 @@
         </exec>
     </target>
 
-    <target name="js-preprocess" depends="js-concatenate, js-preprocess-windows, js-preprocess-unix">
+    <target name="js-preprocess" depends="js-preprocess-windows, js-preprocess-unix">
     </target>
 
     <target name="js-copy" depends="js-preprocess">

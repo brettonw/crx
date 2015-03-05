@@ -8,9 +8,11 @@ var Ship = function () {
         // the ship should not be stunned to start
         this.stunnedTime = 0;
 
-        // two engines capable of overcoming gravity applied to four
+        // two engines capable of overcoming gravity applied to the particles 
+        // making up the ship, want 110% of gravity
         // particle masses g * 4 / 2... = 14.75
-        this.thrustRatio = 21;
+        this.thrustRatio = 1.1 * ((this.particles.length * -Constants.G) / 2.0);
+        this.thrustRatio *= 0.1;
 
         this.learn ();
         this.reset (position, spinPosition);
@@ -31,7 +33,7 @@ var Ship = function () {
             }
             var spinAcceleration = Math.abs(scope.spinVelocity - spinVelocity) / (deltaTime * stabilizationFrames);
             spinVelocity = scope.spinVelocity;
-            console.log("Spin Velocity: " + spinVelocity.toPrecision(5) + ", Spin Acceleration: " + spinAcceleration.toPrecision(5) + "/sec");
+            LOG("Spin Velocity: " + spinVelocity.toPrecision(5) + ", Spin Acceleration: " + spinAcceleration.toPrecision(5) + "/sec");
             accumulator += spinAcceleration;
             ++accumulatorCount;
             return spinAcceleration;
@@ -43,11 +45,20 @@ var Ship = function () {
         this.thrust(-1, 1);
         report();
 
+        this.thrust(-1, 1);
+        report();
+
+        this.thrust(1, -1);
+        report();
+
+        this.thrust(1, -1);
+        report();
+
         this.thrust(1, -1);
         report();
 
         this.spinAcceleration = accumulator / accumulatorCount;
-        console.log("Spin Acceleration: " + this.spinAcceleration);
+        LOG("Spin Acceleration: " + this.spinAcceleration);
     }
 
     _.thrust = function (left, right) {
@@ -79,15 +90,34 @@ var Ship = function () {
         }
         var deltaSpinPositionMagnitude = Math.abs (deltaSpinPosition);
 
-        // compute the desired change in rotational velocity, and the thrust
-        // associated with that, then apply it
-        var timeToTargetSpinPosition = 0.15 * (1 + deltaSpinPositionMagnitude);
-        var velocityToTargetSpinPosition = (deltaSpinPosition / timeToTargetSpinPosition);
-        var deltaVelocityNeeded = velocityToTargetSpinPosition - this.spinVelocity;
-        var thrustNeeded = deltaVelocityNeeded / (this.spinAcceleration * 0.5); // conservative
-        var clampedThrust = Math.min(Math.max(thrustNeeded, -1.0), 1.0);
-        this.thrust (-clampedThrust, clampedThrust);
-        //console.log ("thrust: " + clampedThrust);
+        // compute the acceleration as a function of full throttle on until we
+        // are halfway there, and then full throttle reverse to stop
+        var accelerationPerFrame = this.spinAcceleration * deltaTime;
+        var spinMagnitudePerFrame = Math.abs(this.spinVelocity * deltaTime);
+        var framesToStop = Math.ceil (spinMagnitudePerFrame / accelerationPerFrame);
+        var framesToDest = (spinMagnitudePerFrame > 0) ? (deltaSpinPositionMagnitude / spinMagnitudePerFrame) : (framesToStop + 1);
+
+        var thrust = 0;
+        if (framesToStop < framesToDest) {
+            thrust = Math.sgn (deltaSpinPosition);
+        } else {
+            thrust = -Math.sgn (deltaSpinPosition);
+        }
+        this.thrust(-thrust, thrust);
+
+        //#define LOG_POINT
+        #ifdef LOG_POINT
+        LOG("--------")
+        LOG("targetSpinPosition: " + targetSpinPosition);
+        LOG("deltaSpinPosition: " + deltaSpinPosition);
+        LOG("deltaSpinPositionMagnitude: " + deltaSpinPositionMagnitude);
+        LOG("timeToTargetSpinPosition: " + timeToTargetSpinPosition);
+        LOG("velocityToTargetSpinPosition: " + velocityToTargetSpinPosition);
+        LOG("deltaVelocityNeeded: " + deltaVelocityNeeded);
+        LOG("thrustNeeded: " + thrustNeeded);
+        LOG("clampedThrust: " + clampedThrust);
+        #endif
+
 
         // return how close the ship is to pointing in the right direction
         return deltaSpinPositionMagnitude;
@@ -103,7 +133,7 @@ var Ship = function () {
         // allow for latency in the control system, i.e. having to turn around
         // to decelerate
         var speed = targetVelocity.norm () * fudgeFactor;
-        //console.log ("Go speed = " + speed.toPrecision (5));
+        //LOG ("Go speed = " + speed.toPrecision (5));
         var axis = (speed > 0) ?
             targetVelocity.scale (1.0 / speed) :
             (ship.velocity.normSq () > 0 ?
@@ -112,8 +142,8 @@ var Ship = function () {
         var perp = axis.perpendicular ();
 
         // compute the velocity corrections needed, including a clamped axis
-        // component (affects how the ship slows down), and a doubled perp
-        // component to help catch the target vector quicker
+        // component (affects how the ship slows down), and a perpendicular
+        // component doubled to catch the target vector
         var axisComponent = Math.max (clamp, speed - (axis.dot (ship.velocity)));
         var perpComponent = 2.0 * perp.dot (ship.velocity);
 
@@ -124,7 +154,7 @@ var Ship = function () {
             var deltaSpinPosition = ship.point (pointDirection);
 
             // if we are pointing the right way (within a few degrees), let's go...
-            var thrustLevel = 1.0 - (deltaSpinPosition / (Math.PI * 0.5));
+            var thrustLevel = 1.0 - (deltaSpinPosition / (Math.PI * 60.0 / 180.0));
             if (thrustLevel > 0) {
                 // we exponentiate the thrust level to increase the accuracy of
                 // thrusting along the correcting vector, but the discrete nature of
@@ -144,16 +174,16 @@ var Ship = function () {
 
     _.goTo = function (targetPoint) {
         var targetVelocity = targetPoint.subtract (this.position);
-        shipGo (this, targetVelocity, -1.0e3, 0.99, 6.0);
+        shipGo (this, targetVelocity, -1.0e3, 0.99, 2.0);
     }
 
     _.stop = function () {
-        shipGo (this, Vector2d.zero (), -1.0e3, 1.0, 5.0);
+        shipGo (this, Vector2d.zero (), -1.0e3, 1.0, 10.0);
     }
 
     _.stun = function (stunnedTime) {
         this.stunnedTime = Math.max(this.stunnedTime, stunnedTime);
-        //console.log ("stunnedTime: " + stunnedTime);
+        //LOG ("stunnedTime: " + stunnedTime);
     }
 
     _.update = function (deltaTime) {
