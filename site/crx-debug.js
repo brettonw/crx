@@ -230,7 +230,6 @@ var Ship = function () {
         Object.getPrototypeOf(_).init.call(this, name, Vector2d.zero(), 0);
         this.stunnedTime = 0;
         this.thrustRatio = 1.1 * ((this.particles.length * -Constants.G) / 2.0);
-        this.thrustRatio *= 0.1;
         this.learn ();
         this.reset (position, spinPosition);
         return this;
@@ -288,17 +287,14 @@ var Ship = function () {
             deltaSpinPosition += (Math.PI * 2.0);
         }
         var deltaSpinPositionMagnitude = Math.abs (deltaSpinPosition);
-        var accelerationPerFrame = this.spinAcceleration * deltaTime;
-        var spinMagnitudePerFrame = Math.abs(this.spinVelocity * deltaTime);
-        var framesToStop = Math.ceil (spinMagnitudePerFrame / accelerationPerFrame);
-        var framesToDest = (spinMagnitudePerFrame > 0) ? (deltaSpinPositionMagnitude / spinMagnitudePerFrame) : (framesToStop + 1);
-        var thrust = 0;
-        if (framesToStop < framesToDest) {
-            thrust = Math.sgn (deltaSpinPosition);
-        } else {
-            thrust = -Math.sgn (deltaSpinPosition);
-        }
-        this.thrust(-thrust, thrust);
+        var maxRotationVelocity = Math.PI * 2.0;
+        var timeFactor = 1.0 / maxRotationVelocity;
+        var timeToTargetSpinPosition = timeFactor * (1 + deltaSpinPositionMagnitude);
+        var velocityToTargetSpinPosition = (deltaSpinPosition / timeToTargetSpinPosition);
+        var deltaVelocityNeeded = velocityToTargetSpinPosition - this.spinVelocity;
+        var thrustNeeded = deltaVelocityNeeded / (this.spinAcceleration * 0.5);
+        var clampedThrust = Math.clamp(thrustNeeded, -1.0, 1.0);
+        this.thrust (-clampedThrust, clampedThrust);
         return deltaSpinPositionMagnitude;
     }
     _.pointAt = function (point) {
@@ -747,6 +743,12 @@ var GameContainer = function () {
 }();
 var TestContainer = function () {
     var _ = Object.create(Container);
+    var gameNames = GameContainer.getGameNames();
+    for (var i = 0, count = gameNames.length; i < count; ++i) {
+        var gameName = gameNames[i];
+        var game = GameContainer.getGame(gameName);
+        _.addGame(gameName.substring(4), game);
+    }
     return _;
 }();
 TestContainer.addGame("Viewport", function (ship) {

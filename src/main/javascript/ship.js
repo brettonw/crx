@@ -12,7 +12,6 @@ var Ship = function () {
         // making up the ship, want 110% of gravity
         // particle masses g * 4 / 2... = 14.75
         this.thrustRatio = 1.1 * ((this.particles.length * -Constants.G) / 2.0);
-        this.thrustRatio *= 0.1;
 
         this.learn ();
         this.reset (position, spinPosition);
@@ -90,20 +89,16 @@ var Ship = function () {
         }
         var deltaSpinPositionMagnitude = Math.abs (deltaSpinPosition);
 
-        // compute the acceleration as a function of full throttle on until we
-        // are halfway there, and then full throttle reverse to stop
-        var accelerationPerFrame = this.spinAcceleration * deltaTime;
-        var spinMagnitudePerFrame = Math.abs(this.spinVelocity * deltaTime);
-        var framesToStop = Math.ceil (spinMagnitudePerFrame / accelerationPerFrame);
-        var framesToDest = (spinMagnitudePerFrame > 0) ? (deltaSpinPositionMagnitude / spinMagnitudePerFrame) : (framesToStop + 1);
-
-        var thrust = 0;
-        if (framesToStop < framesToDest) {
-            thrust = Math.sgn (deltaSpinPosition);
-        } else {
-            thrust = -Math.sgn (deltaSpinPosition);
-        }
-        this.thrust(-thrust, thrust);
+        // just an empirical rate, this should probably come from a parameter
+        // to the ship: max rotational velocity (radians/sec)
+        var maxRotationVelocity = Math.PI * 2.0;
+        var timeFactor = 1.0 / maxRotationVelocity;
+        var timeToTargetSpinPosition = timeFactor * (1 + deltaSpinPositionMagnitude);
+        var velocityToTargetSpinPosition = (deltaSpinPosition / timeToTargetSpinPosition);
+        var deltaVelocityNeeded = velocityToTargetSpinPosition - this.spinVelocity;
+        var thrustNeeded = deltaVelocityNeeded / (this.spinAcceleration * 0.5);
+        var clampedThrust = Math.clamp(thrustNeeded, -1.0, 1.0);
+        this.thrust (-clampedThrust, clampedThrust);
 
         //#define LOG_POINT
         #ifdef LOG_POINT
@@ -117,7 +112,6 @@ var Ship = function () {
         LOG("thrustNeeded: " + thrustNeeded);
         LOG("clampedThrust: " + clampedThrust);
         #endif
-
 
         // return how close the ship is to pointing in the right direction
         return deltaSpinPositionMagnitude;
