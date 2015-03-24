@@ -34,6 +34,8 @@
             <!-- debug files,  file order is important -->
             <fileset dir="${test-dir}" includes="test.js" />
             <fileset dir="${test-dir}" includes="viewport.js" />
+            <fileset dir="${test-dir}" includes="simpleparticle.js" />
+            <fileset dir="${test-dir}" includes="gravityparticle.js" />
             <fileset dir="${test-dir}" includes="simpleconstraints.js" />
             <fileset dir="${test-dir}" includes="moreconstraints.js" />
             <fileset dir="${test-dir}" includes="keycontrols.js" />
