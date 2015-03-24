@@ -62,12 +62,12 @@ TestContainer.addGame("More Constraints", function (ship) {
                 particles[2].paint();
                 particles[3].paint();
                 if (GameKeys.isDown(GameKeys.codes.rightArrow)) {
-                    particles[0].applyAcceleration(xAxis.scale(1));
-                    particles[2].applyAcceleration(xAxis.scale(-1));
+                    particles[0].applyAcceleration(xAxis.scale(2));
+                    particles[2].applyAcceleration(xAxis.scale(-2));
                 }
                 if (GameKeys.isDown(GameKeys.codes.leftArrow)) {
-                    particles[0].applyAcceleration(xAxis.scale(-1));
-                    particles[2].applyAcceleration(xAxis.scale(1));
+                    particles[0].applyAcceleration(xAxis.scale(-2));
+                    particles[2].applyAcceleration(xAxis.scale(2));
                 }
             },
             "finish": function () { }

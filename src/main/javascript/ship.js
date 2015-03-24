@@ -100,19 +100,6 @@ var Ship = function () {
         var clampedThrust = Math.clamp(thrustNeeded, -1.0, 1.0);
         this.thrust (-clampedThrust, clampedThrust);
 
-        //#define LOG_POINT
-        #ifdef LOG_POINT
-        LOG("--------")
-        LOG("targetSpinPosition: " + targetSpinPosition);
-        LOG("deltaSpinPosition: " + deltaSpinPosition);
-        LOG("deltaSpinPositionMagnitude: " + deltaSpinPositionMagnitude);
-        LOG("timeToTargetSpinPosition: " + timeToTargetSpinPosition);
-        LOG("velocityToTargetSpinPosition: " + velocityToTargetSpinPosition);
-        LOG("deltaVelocityNeeded: " + deltaVelocityNeeded);
-        LOG("thrustNeeded: " + thrustNeeded);
-        LOG("clampedThrust: " + clampedThrust);
-        #endif
-
         // return how close the ship is to pointing in the right direction
         return deltaSpinPositionMagnitude;
     }
