@@ -17,7 +17,7 @@ var Ship = function () {
         this.reset (position, spinPosition);
 
         return this;
-    }
+    };
 
     _.learn = function () {
         this.reset(Vector2d.zero(), 0);
@@ -36,7 +36,7 @@ var Ship = function () {
             accumulator += spinAcceleration;
             ++accumulatorCount;
             return spinAcceleration;
-        }
+        };
 
         this.thrust(-1, 1);
         report();
@@ -58,7 +58,7 @@ var Ship = function () {
 
         this.spinAcceleration = accumulator / accumulatorCount;
         LOG("Spin Acceleration: " + this.spinAcceleration);
-    }
+    };
 
     _.thrust = function (left, right) {
         // don't do anything if the ship is stunned
@@ -75,7 +75,7 @@ var Ship = function () {
             this.particles[0].applyAcceleration(leftThrustVector);
             this.particles[2].applyAcceleration(rightThrustVector);
         }
-    }
+    };
 
     _.point = function (direction) {
         // compute the angle delta
@@ -102,12 +102,12 @@ var Ship = function () {
 
         // return how close the ship is to pointing in the right direction
         return deltaSpinPositionMagnitude;
-    }
+    };
 
     _.pointAt = function (point) {
         var direction = point.subtract (this.position).normalized ();
         this.point (direction);
-    }
+    };
 
     var shipGo = function (ship, targetVelocity, clamp, fudgeFactor, precisionExponent) {
         // compute the frame for calculations, our target speed is fudged to

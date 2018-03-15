@@ -10,7 +10,7 @@ var Thing = function () {
         var computeRadius = function (mass) {
             // m = pi r^2 d
             return Math.sqrt(mass / (Math.PI * geometry.density));
-        }
+        };
 
         geometry.points = [
             { "pt": Vector2d.xy(-0.05, 0.05), "radius": computeRadius(1.0) },
@@ -29,7 +29,7 @@ var Thing = function () {
                 .scale(0.5);
             return particles[3].position
                 .subtract(midpoint).normalized();
-        }
+        };
 
         return geometry;
     }();
@@ -86,7 +86,7 @@ var Thing = function () {
                 .add(xAxis.scale(points[i].pt.x))
                 .add(yAxis.scale(points[i].pt.y));
         }
-    }
+    };
 
     _.reset = function (position, spinPosition) {
         var particles = this.particles;
@@ -143,7 +143,7 @@ var Thing = function () {
         Manager.addThing(this);
 
         return this;
-    }
+    };
 
     _.makeGeometry = function (container) {
         var particles = this.particles;
@@ -176,7 +176,7 @@ var Thing = function () {
     _.update = function (deltaTime) {
         // update the frame of reference
         this.updateFrameOfReference(deltaTime);
-    }
+    };
 
     _.paint = function () {
         // update the ghost
@@ -195,7 +195,7 @@ var Thing = function () {
         for (var i = 0, count = particles.length; i < count; ++i) {
             particles[i].paint();
         }
-    }
+    };
 
     return _;
 }();
