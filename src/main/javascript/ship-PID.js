@@ -10,7 +10,7 @@ let ShipPID = function () {
         Object.getPrototypeOf(_).init.call(this, name, Vector2d.zero(), 0);
 
         this.last = { p: 0.0, i: 0.0 };
-        this.gain = { p: 1.0, i: 0.0, d: 0.0 };
+        this.gain = { p: 6.0, i: 0.025, d: 40.0 };
 
         return this;
     };
@@ -32,13 +32,14 @@ let ShipPID = function () {
         let last = this.last;
         let i = last.i + p;
         let d = p - last.p;
+        console.log ("p = " + p.toFixed(4) + ", i = " + i.toFixed(4) + ", d = " + d.toFixed(4));
         this.last = { p: p, i: i };
 
         let thrustNeeded = (p * this.gain.p) + (i * this.gain.i) + (d * this.gain.d);
         let clampedThrust = Math.clamp(thrustNeeded, -1.0, 1.0);
         this.thrust (-clampedThrust, clampedThrust);
 
-        return Math.abs (delta);
+        return Math.abs (p);
     };
 
     return _;

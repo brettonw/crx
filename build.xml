@@ -20,7 +20,8 @@
             <fileset dir="${source-dir}" includes="vector2d.js" />
             <fileset dir="${source-dir}" includes="particle.js" />
             <fileset dir="${source-dir}" includes="thing.js" />
-            <fileset dir="${source-dir}" includes="ship.js" />
+            <fileset dir="${source-dir}" includes="ship.js"/>
+            <fileset dir="${source-dir}" includes="ship-PID.js"/>
             <fileset dir="${source-dir}" includes="manager.js" />
             <fileset dir="${source-dir}" includes="gamekeys.js" />
             <fileset dir="${source-dir}" includes="container.js" />
@@ -39,7 +40,8 @@
             <fileset dir="${test-dir}" includes="simpleconstraints.js" />
             <fileset dir="${test-dir}" includes="moreconstraints.js" />
             <fileset dir="${test-dir}" includes="keycontrols.js" />
-            <fileset dir="${test-dir}" includes="pointat.js" />
+            <fileset dir="${test-dir}" includes="pointat.js"/>
+            <fileset dir="${test-dir}" includes="pointat-PID.js"/>
             <fileset dir="${test-dir}" includes="gotoward.js" />
             <fileset dir="${test-dir}" includes="goto.js" />
         </concat>

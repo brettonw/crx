@@ -1,5 +1,5 @@
-TestContainer.addGame("Point At", function (ship) {
-        var ship;
+TestContainer.addGame("Point At", function () {
+        let ship;
         return {
             "setup": function (container) {
                 ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);

@@ -1,4 +1,4 @@
-TestContainer.addGame("Point  - PID", function (ship) {
+TestContainer.addGame("Point At - PID", function () {
         let ship;
         return {
             "setup": function (container) {
@@ -6,7 +6,7 @@ TestContainer.addGame("Point  - PID", function (ship) {
             },
             "play": function () {
                 if (GameKeys.isDown(GameKeys.codes.upArrow)) {
-                    let deltaSpinPosition = ship.pointAtPID(GameKeys.targetPt);
+                    let deltaSpinPosition = ship.pointAt(GameKeys.targetPt);
                 }
             },
             "finish": function () { }

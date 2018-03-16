@@ -142,7 +142,7 @@ var Thing = function () {
         var computeRadius = function (mass) {
 
             return Math.sqrt(mass / (Math.PI * geometry.density));
-        }
+        };
 
         geometry.points = [
             { "pt": Vector2d.xy(-0.05, 0.05), "radius": computeRadius(1.0) },
@@ -161,7 +161,7 @@ var Thing = function () {
                 .scale(0.5);
             return particles[3].position
                 .subtract(midpoint).normalized();
-        }
+        };
 
         return geometry;
     }();
@@ -218,7 +218,7 @@ var Thing = function () {
                 .add(xAxis.scale(points[i].pt.x))
                 .add(yAxis.scale(points[i].pt.y));
         }
-    }
+    };
 
     _.reset = function (position, spinPosition) {
         var particles = this.particles;
@@ -275,7 +275,7 @@ var Thing = function () {
         Manager.addThing(this);
 
         return this;
-    }
+    };
 
     _.makeGeometry = function (container) {
         var particles = this.particles;
@@ -308,7 +308,7 @@ var Thing = function () {
     _.update = function (deltaTime) {
 
         this.updateFrameOfReference(deltaTime);
-    }
+    };
 
     _.paint = function () {
 
@@ -327,7 +327,7 @@ var Thing = function () {
         for (var i = 0, count = particles.length; i < count; ++i) {
             particles[i].paint();
         }
-    }
+    };
 
     return _;
 }();
@@ -350,7 +350,7 @@ var Ship = function () {
         this.reset (position, spinPosition);
 
         return this;
-    }
+    };
 
     _.learn = function () {
         this.reset(Vector2d.zero(), 0);
@@ -369,7 +369,7 @@ var Ship = function () {
             accumulator += spinAcceleration;
             ++accumulatorCount;
             return spinAcceleration;
-        }
+        };
 
         this.thrust(-1, 1);
         report();
@@ -391,7 +391,7 @@ var Ship = function () {
 
         this.spinAcceleration = accumulator / accumulatorCount;
         console.log("Spin Acceleration: " + this.spinAcceleration);
-    }
+    };
 
     _.thrust = function (left, right) {
 
@@ -408,7 +408,7 @@ var Ship = function () {
             this.particles[0].applyAcceleration(leftThrustVector);
             this.particles[2].applyAcceleration(rightThrustVector);
         }
-    }
+    };
 
     _.point = function (direction) {
 
@@ -435,12 +435,12 @@ var Ship = function () {
 
 
         return deltaSpinPositionMagnitude;
-    }
+    };
 
     _.pointAt = function (point) {
         var direction = point.subtract (this.position).normalized ();
         this.point (direction);
-    }
+    };
 
     var shipGo = function (ship, targetVelocity, clamp, fudgeFactor, precisionExponent) {
 
@@ -507,6 +507,52 @@ var Ship = function () {
 
         this.stunnedTime -= deltaTime;
     }
+
+    return _;
+}();
+let ShipPID = function () {
+    let _ = Object.create(Ship);
+
+    if (! ("TWO_PI" in Math)) {
+        Math.TWO_PI = Math.PI * 2.0;
+    }
+
+    _.init = function (name, position, spinPosition) {
+
+        Object.getPrototypeOf(_).init.call(this, name, Vector2d.zero(), 0);
+
+        this.last = { p: 0.0, i: 0.0 };
+        this.gain = { p: 6.0, i: 0.025, d: 40.0 };
+
+        return this;
+    };
+
+    _.point = function (direction) {
+        let conditionAngle = function (angle) {
+            while (angle > Math.PI) {
+                angle -= (Math.TWO_PI);
+            }
+            while (angle < -Math.PI) {
+                angle += (Math.TWO_PI);
+            }
+            return angle;
+        };
+
+        let targetPosition = Math.atan2 (direction.y, direction.x);
+        let currentPosition = this.spinPosition;
+        let p = conditionAngle (targetPosition - currentPosition) / Math.PI;
+        let last = this.last;
+        let i = last.i + p;
+        let d = p - last.p;
+        console.log ("p = " + p.toFixed(4) + ", i = " + i.toFixed(4) + ", d = " + d.toFixed(4));
+        this.last = { p: p, i: i };
+
+        let thrustNeeded = (p * this.gain.p) + (i * this.gain.i) + (d * this.gain.d);
+        let clampedThrust = Math.clamp(thrustNeeded, -1.0, 1.0);
+        this.thrust (-clampedThrust, clampedThrust);
+
+        return Math.abs (p);
+    };
 
     return _;
 }();
@@ -1277,8 +1323,8 @@ TestContainer.addGame("Key Controls", function (ship) {
             "finish": function () { }
         };
     }());
-TestContainer.addGame("Point At", function (ship) {
-        var ship;
+TestContainer.addGame("Point At", function () {
+        let ship;
         return {
             "setup": function (container) {
                 ship = Object.create(Ship).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
@@ -1286,6 +1332,20 @@ TestContainer.addGame("Point At", function (ship) {
             "play": function () {
                 if (GameKeys.isDown(GameKeys.codes.upArrow)) {
                     var deltaSpinPosition = ship.pointAt(GameKeys.targetPt);
+                }
+            },
+            "finish": function () { }
+        };
+    }());
+TestContainer.addGame("Point At - PID", function () {
+        let ship;
+        return {
+            "setup": function (container) {
+                ship = Object.create(ShipPID).init("Player 1", Vector2d.zero(), 0).makeGeometry(container);
+            },
+            "play": function () {
+                if (GameKeys.isDown(GameKeys.codes.upArrow)) {
+                    let deltaSpinPosition = ship.pointAt(GameKeys.targetPt);
                 }
             },
             "finish": function () { }
