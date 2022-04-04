@@ -62,8 +62,16 @@ var Manager = function () {
             var a = particles[constraint.a];
             var b = particles[constraint.b];
             var delta = a.position.subtract(b.position);
-            var length = delta.normalize();
+            var deltaLength = constraint.length - delta.normalize();
 
+            // for Verlet (position-based) integration, we simply move the particles to where they
+            // should be according to the constraint and the relative mass of the two particles. the
+            // state information contained in the particles maintains basic laws, conservation of
+            // momentum, etc.
+            var totalMass = a.mass + b.mass;
+            a.position = a.position.add (delta.scale (deltaLength * (a.mass / totalMass)));
+            b.position = b.position.add (delta.scale (-deltaLength * (b.mass / totalMass)));
+            /*
             // compute the relative velocity damping to apply, the goal
             // here is to halt all relative motion between the particles
             var relativeVelocity = a.velocity.subtract(b.velocity);
@@ -81,6 +89,7 @@ var Manager = function () {
             var FB = springForce + velocityDampingForceB;
             a.applyForce(delta.scale(-FA));
             b.applyForce(delta.scale(FB))
+            */
         });
     }
 

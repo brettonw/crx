@@ -3,6 +3,8 @@ var Particle = function () {
 
     _.reset = function (position) {
         this.position = position;
+        this.lastPosition = position;
+        this.lastDeltaTime = 1.0e-3;
         this.velocity = Vector2d.zero();
         this.force = Vector2d.zero();
     }
@@ -54,6 +56,31 @@ var Particle = function () {
 
     // update the particle position and physical state for the specified timestep
     _.update = function (deltaTime) {
+        // use Verlet integration to compute the next position
+        // pos = pos + (pos - lastPos) + (accel * deltaTime^2)
+
+        // compute the velocity term, scaled to account for changes in the deltaTime value
+        let velocityTerm = this.position.subtract (this.lastPosition).scale (deltaTime / this.lastDeltaTime);
+
+        // compute the acceleration term from the accumulated forces, and then clear them out so we
+        // don't keep applying them
+        let accelerationTerm = this.force.scale (deltaTime * deltaTime / this.mass);
+        this.force = Vector2d.zero();
+
+        // compute the deltaPosition and add it to the position
+        let deltaPosition = velocityTerm.add (accelerationTerm);
+        let nextPosition = this.position.add (deltaPosition);
+
+        // update the velocity vector for giggles
+        this.velocity = deltaPosition.scale (1.0 / deltaTime);
+
+        // save the position for the next iteration
+        this.lastDeltaTime = deltaTime;
+        this.lastPosition = this.position;
+        this.position = nextPosition;
+
+
+/*
         // compute acceleration from the forces, then clear out the forces
         var deltaVelocity = this.force.scale(deltaTime / this.mass);
         this.force = Vector2d.zero();
@@ -63,6 +90,7 @@ var Particle = function () {
 
         // update the velocity from the delta
         this.velocity = this.velocity.add(deltaVelocity);
+*/
     };
 
     // update the drawing parameters
