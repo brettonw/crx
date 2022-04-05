@@ -146,7 +146,7 @@ let Thing = function () {
         }
         this.spinVelocity = deltaSpinPosition / deltaTime;
         this.spinPosition = spinPosition;
-        let shouldNormalize = true;
+        let shouldNormalize = false;
         if (shouldNormalize) {
             let points = this.geometry.points;
             let yAxis = xAxis.perpendicular ();
@@ -385,7 +385,6 @@ let ShipPID = function () {
         let last = this.last;
         let i = last.i + p;
         let d = p - last.p;
-        console.log ("p = " + p.toFixed(4) + ", i = " + i.toFixed(4) + ", d = " + d.toFixed(4));
         this.last = { p: p, i: i };
         let thrustNeeded = (p * this.gain.p) + (i * this.gain.i) + (d * this.gain.d);
         let clampedThrust = Math.clamp(thrustNeeded, -1.0, 1.0);
@@ -451,7 +450,6 @@ let Manager = function () {
             });
             averageError = totalError / constraints.length;
         } while ((i < maxIterations) && (averageError > maxConstraintError));
-        console.log("Iteration: " + i + ", Avg. Error: " + averageError.toFixed(5));
     }
     _.updateThings = function (deltaTime) {
         things.forEach(function (thing, index, array) {

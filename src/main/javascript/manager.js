@@ -86,7 +86,7 @@ let Manager = function () {
             averageError = totalError / constraints.length;
             //LOG("Iteration: " + i + ", Avg. Error: " + averageError.toFixed(5));
         } while ((i < maxIterations) && (averageError > maxConstraintError));
-        LOG ("Iteration: " + i + ", Avg. Error: " + averageError.toFixed(5));
+        //LOG ("Iteration: " + i + ", Avg. Error: " + averageError.toFixed(5));
     }
 
     _.updateThings = function (deltaTime) {

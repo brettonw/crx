@@ -32,7 +32,7 @@ let ShipPID = function () {
         let last = this.last;
         let i = last.i + p;
         let d = p - last.p;
-        console.log ("p = " + p.toFixed(4) + ", i = " + i.toFixed(4) + ", d = " + d.toFixed(4));
+        //LOG ("p = " + p.toFixed(4) + ", i = " + i.toFixed(4) + ", d = " + d.toFixed(4));
         this.last = { p: p, i: i };
 
         let thrustNeeded = (p * this.gain.p) + (i * this.gain.i) + (d * this.gain.d);
