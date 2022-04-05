@@ -40,7 +40,7 @@ let Manager = function () {
         delete constraints[id];
     }
 
-    let things = []
+    let things = [];
     let nextThing = 0;
 
     _.addThing = function (thing) {

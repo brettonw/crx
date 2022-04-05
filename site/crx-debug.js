@@ -7,7 +7,7 @@ Math.clamp = function (value, min, max) {
 }
 let Constants = {
     G: -9.8
-}
+};
 let Vector2d = function () {
     let _ = Object.create(null);
     let makeVector = function (x, y) {
@@ -295,7 +295,7 @@ let Ship = function () {
     };
     _.point = function (direction) {
         let targetSpinPosition = Math.atan2 (direction.y, direction.x);
-        let deltaSpinPosition = targetSpinPosition - this.spinPosition
+        let deltaSpinPosition = targetSpinPosition - this.spinPosition;
      while (deltaSpinPosition > Math.PI) {
             deltaSpinPosition -= (Math.PI * 2.0);
         }
@@ -338,7 +338,7 @@ let Ship = function () {
         } else {
             ship.point (axis);
         }
-    }
+    };
     _.go = function (targetVelocity) {
         shipGo (this, targetVelocity, 0.0, 1.0, 2.0);
     }
@@ -420,7 +420,7 @@ let Manager = function () {
     _.removeConstraint = function (id) {
         delete constraints[id];
     }
-    let things = []
+    let things = [];
     let nextThing = 0;
     _.addThing = function (thing) {
         let id = nextThing++;
