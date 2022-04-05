@@ -15,7 +15,7 @@ let Ship = function () {
         for (i = 0; i < this.particles.length; ++i) {
             totalMass += this.particles[i].mass;
         }
-        this.thrustRatio = 1 * ((totalMass * -Constants.G) / 2.0);
+        this.thrustRatio = 1.9 * (totalMass * -Constants.G);
         // XXX I think this needs some work
 
         this.learn ();

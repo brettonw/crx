@@ -83,7 +83,7 @@ let Thing = function () {
         // be fixed by going to much higher simulation rates
         // XXX this seems to be unnecessary when using verlet integration and
         // XXX position-based physics (bonus)
-        let shouldNormalize = false;
+        let shouldNormalize = true;
         if (shouldNormalize) {
             let points = this.geometry.points;
             let yAxis = xAxis.perpendicular ();

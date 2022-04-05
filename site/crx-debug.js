@@ -146,7 +146,7 @@ let Thing = function () {
         }
         this.spinVelocity = deltaSpinPosition / deltaTime;
         this.spinPosition = spinPosition;
-        let shouldNormalize = false;
+        let shouldNormalize = true;
         if (shouldNormalize) {
             let points = this.geometry.points;
             let yAxis = xAxis.perpendicular ();
@@ -245,7 +245,7 @@ let Ship = function () {
         for (i = 0; i < this.particles.length; ++i) {
             totalMass += this.particles[i].mass;
         }
-        this.thrustRatio = 1 * ((totalMass * -Constants.G) / 2.0);
+        this.thrustRatio = 1.9 * (totalMass * -Constants.G);
         this.learn ();
         this.reset (position, spinPosition);
         return this;
@@ -285,7 +285,7 @@ let Ship = function () {
     };
     _.thrust = function (left, right) {
         if (this.stunnedTime <= 0) {
-            let thrustScaling = this.thrustRatio * subStepCount;
+            let thrustScaling = this.thrustRatio;
             let orientationVector = Vector2d.angle(this.spinPosition);
             let leftThrustVector = orientationVector.scale(thrustScaling * left);
             let rightThrustVector = orientationVector.scale(thrustScaling * right);
