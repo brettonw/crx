@@ -1,10 +1,10 @@
-TestContainer.addGame("Simple Particle", function (ship) {
-        var particle;
+TestContainer.addGame("Simple Particle", function () {
+        let particle;
         return {
             "setup": function (container) {
                 // create the particle
                 particle = Manager.addParticle(function () {
-                    var r = 0.01, d = 300;
+                    let r = 0.01, d = 300;
                     return Object.create(Particle).init("Particle", Vector2d.zero(), r, d).
                         makeGeometry(container);
                 }());

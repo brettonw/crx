@@ -1,5 +1,5 @@
-var GameKeys = function () {
-    var _ = Object.create(null);
+let GameKeys = function () {
+    let _ = Object.create(null);
 
     _.codes = {
         "backspace": 8,
@@ -108,8 +108,8 @@ var GameKeys = function () {
         this.down = Object.create(null);
 
         // add the event handlers to the document body
-        var body = document.body;
-        var scope = this;
+        let body = document.body;
+        let scope = this;
         body.onkeydown = function (e) {
             scope.down[e.keyCode] = true;
         }

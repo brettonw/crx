@@ -1,17 +1,17 @@
-TestContainer.addGame("Gravity Particle", function (ship) {
-        var particle;
+TestContainer.addGame("Gravity Particle", function () {
+        let particle;
         return {
             "setup": function (container) {
                 // create the particle
                 particle = Manager.addParticle(function () {
-                    var r = 0.01, d = 300;
+                    let r = 0.01, d = 300;
                     return Object.create(Particle).init("Particle", Vector2d.zero(), r, d).
                         makeGeometry(container);
                 }());
 
                 // gravity toward the pointer
                 Manager.setGravity(function (particle, deltaTime) {
-                    var gravityVector = GameKeys.targetPt.subtract(particle.position);
+                    let gravityVector = GameKeys.targetPt.subtract(particle.position);
                     particle.applyAcceleration(gravityVector);
                 });
             },

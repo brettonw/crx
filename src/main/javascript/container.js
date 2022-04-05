@@ -1,5 +1,5 @@
-var Container = function () {
-    var _ = Object.create(null);
+let Container = function () {
+    let _ = Object.create(null);
 
     _.addGame = function (name, game) {
         if (("games" in this) == false) {
@@ -11,8 +11,8 @@ var Container = function () {
     }
 
     _.getGameNames = function () {
-        var gameNames = [];
-        for (var gameName in this.games) {
+        let gameNames = [];
+        for (let gameName in this.games) {
             gameNames.push(gameName);
         }
         gameNames.sort();

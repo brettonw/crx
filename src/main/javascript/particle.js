@@ -1,5 +1,5 @@
-var Particle = function () {
-    var _ = Object.create(null);
+let Particle = function () {
+    let _ = Object.create(null);
 
     _.reset = function (position) {
         this.position = position;
@@ -25,7 +25,7 @@ var Particle = function () {
     }
 
     _.applyAcceleration = function (acceleration) {
-        var force = acceleration.scale(this.mass);
+        let force = acceleration.scale(this.mass);
         this.applyForce(force);
     }
 
@@ -56,7 +56,7 @@ var Particle = function () {
 
     // update the particle position and physical state for the specified timestep
     _.update = function (deltaTime) {
-        // use Verlet integration to compute the next position
+        // use Verlet integration (position-based dynamics) to compute the next position
         // pos = pos + (pos - lastPos) + (accel * deltaTime^2)
 
         // compute the velocity term, scaled to account for changes in the deltaTime value
@@ -78,19 +78,6 @@ var Particle = function () {
         this.lastDeltaTime = deltaTime;
         this.lastPosition = this.position;
         this.position = nextPosition;
-
-
-/*
-        // compute acceleration from the forces, then clear out the forces
-        var deltaVelocity = this.force.scale(deltaTime / this.mass);
-        this.force = Vector2d.zero();
-
-        // using the midpoint method, compute the position change
-        this.position = this.position.add((deltaVelocity.scale(0.5).add(this.velocity)).scale(deltaTime));
-
-        // update the velocity from the delta
-        this.velocity = this.velocity.add(deltaVelocity);
-*/
     };
 
     // update the drawing parameters

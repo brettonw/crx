@@ -1,8 +1,8 @@
-var Vector2d = function () {
-    var _ = Object.create(null);
+let Vector2d = function () {
+    let _ = Object.create(null);
 
-    var makeVector = function (x, y) {
-        var vector = Object.create(_);
+    let makeVector = function (x, y) {
+        let vector = Object.create(_);
         vector.x = x;
         vector.y = y;
         return vector;
@@ -27,7 +27,7 @@ var Vector2d = function () {
     // length related methods
     _.normSq = function () { return this.dot(this); };
     _.norm = function () { return Math.sqrt(this.normSq()); };
-    _.normalize = function () { var norm = this.norm (); this.copy (this.scale(1.0 / norm)); return norm; }
+    _.normalize = function () { let norm = this.norm (); this.copy (this.scale(1.0 / norm)); return norm; }
     _.normalized = function () { return this.scale(1.0 / this.norm()); }
 
     // frame related methods

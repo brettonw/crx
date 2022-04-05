@@ -1,11 +1,16 @@
-var Manager = function () {
-    var _ = Object.create(null);
+let Manager = function () {
+    let _ = Object.create(null);
 
-    var particles = [];
-    var nextParticle = 0;
+    let particles = [];
+    let nextParticle = 0;
+
+    // parameters for the constraint solver
+    let maxIterations = 50;
+    let stiffness = 0.95;
+    let maxConstraintError = 1.0e-5;
 
     _.addParticle = function (particle) {
-        var id = nextParticle++;
+        let id = nextParticle++;
         particles.push(particle);
         particle.id = id;
         return particle;
@@ -18,11 +23,11 @@ var Manager = function () {
         delete particles[id];
     }
 
-    var constraints = [];
-    var nextConstraint = 0;
+    let constraints = [];
+    let nextConstraint = 0;
 
     _.addConstraint = function (a, b, length, damping, k) {
-        var id = nextConstraint++;
+        let id = nextConstraint++;
         // good defaults, damping: 0.5, k: 2.0
         constraints.push({ "a": a, "b": b, "length": length, "damping": damping, "k":k });
         return id;
@@ -35,11 +40,11 @@ var Manager = function () {
         delete constraints[id];
     }
 
-    var things = []
-    var nextThing = 0;
+    let things = []
+    let nextThing = 0;
 
     _.addThing = function (thing) {
-        var id = nextThing++;
+        let id = nextThing++;
         things.push(thing);
         return id;
     }
@@ -58,39 +63,30 @@ var Manager = function () {
         });
 
         // update all the constraints
-        constraints.forEach(function (constraint, index, array) {
-            var a = particles[constraint.a];
-            var b = particles[constraint.b];
-            var delta = a.position.subtract(b.position);
-            var deltaLength = constraint.length - delta.normalize();
+        let i = 0;
+        let averageError = 0;
+        do {
+            i++;
+            let totalError = 0;
+            constraints.forEach (function (constraint, index, array) {
+                let a = particles[constraint.a];
+                let b = particles[constraint.b];
+                let delta = a.position.subtract (b.position);
+                let deltaLength = constraint.length - delta.normalize ();
+                totalError += Math.abs(deltaLength / constraint.length);
 
-            // for Verlet (position-based) integration, we simply move the particles to where they
-            // should be according to the constraint and the relative mass of the two particles. the
-            // state information contained in the particles maintains basic laws, conservation of
-            // momentum, etc.
-            var totalMass = a.mass + b.mass;
-            a.position = a.position.add (delta.scale (deltaLength * (a.mass / totalMass)));
-            b.position = b.position.add (delta.scale (-deltaLength * (b.mass / totalMass)));
-            /*
-            // compute the relative velocity damping to apply, the goal
-            // here is to halt all relative motion between the particles
-            var relativeVelocity = a.velocity.subtract(b.velocity);
-            var springVelocity = relativeVelocity.dot(delta);
-            var totalMass = a.mass + b.mass;
-            var velocityDampingForceA = constraint.damping * (a.mass / totalMass) * springVelocity * totalMass / deltaTime;
-            var velocityDampingForceB = constraint.damping * (b.mass / totalMass) * springVelocity * totalMass / deltaTime;
-
-            // compute a spring force to make length be equal to constraint.length,
-            // using Hooke's law, 2.0 seems to work well
-            var springForce = constraint.k * (length - constraint.length);
-
-            // apply the forces
-            var FA = springForce + velocityDampingForceA;
-            var FB = springForce + velocityDampingForceB;
-            a.applyForce(delta.scale(-FA));
-            b.applyForce(delta.scale(FB))
-            */
-        });
+                // for Verlet (position-based) integration, we simply move the particles to where they
+                // should be according to the constraint and the relative mass of the two particles. the
+                // state information contained in the particles maintains basic laws, conservation of
+                // momentum, etc.
+                let totalMass = a.mass + b.mass;
+                a.position = a.position.add (delta.scale (stiffness * deltaLength * (a.mass / totalMass)));
+                b.position = b.position.add (delta.scale (-stiffness * deltaLength * (b.mass / totalMass)));
+            });
+            averageError = totalError / constraints.length;
+            //LOG("Iteration: " + i + ", Avg. Error: " + averageError.toFixed(5));
+        } while ((i < maxIterations) && (averageError > maxConstraintError));
+        LOG ("Iteration: " + i + ", Avg. Error: " + averageError.toFixed(5));
     }
 
     _.updateThings = function (deltaTime) {
@@ -101,7 +97,7 @@ var Manager = function () {
 
     // gravity, if present, is just a function that gets applied to all
     // particles every update
-    var gravity = null;
+    let gravity = null;
 
     _.setGravity = function (g) {
         gravity = g;
@@ -117,9 +113,9 @@ var Manager = function () {
 
     // a standard update, separate from painting
     _.update = function () {
-        for (var i = 0; i < subStepCount; ++i) {
-            this.updateParticles(subDeltaTime);
+        for (let i = 0; i < subStepCount; ++i) {
             this.applyGravity(subDeltaTime);
+            this.updateParticles(subDeltaTime);
         }
         this.updateThings(deltaTime);
     }

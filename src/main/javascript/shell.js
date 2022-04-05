@@ -1,19 +1,19 @@
-var scale = 1.0;
-var deltaTime = 1.0 / 60.0;
-var subStepCount = 4;
-var subDeltaTime = deltaTime / subStepCount;
+let scale = 1.0;
+let deltaTime = 1.0 / 60.0;
+let subStepCount = 4;
+let subDeltaTime = deltaTime / subStepCount;
 
 function preInitGame(container) {
     // get the game functions list, sorted alphabetically
-    var gameNames = container.getGameNames ();
+    let gameNames = container.getGameNames ();
 
     // determine what page should load after verification
-    var location = new String(window.location);
+    let location = new String(window.location);
     console.log("URL (" + location + ")");
-    var targetIndex = location.search("#");
+    let targetIndex = location.search("#");
     if (targetIndex >= 0) {
-        var target = location.substring(targetIndex + 1);
-        var targetGameIndex = target.toLowerCase().charCodeAt(0) - "a".charCodeAt(0);
+        let target = location.substring(targetIndex + 1);
+        let targetGameIndex = target.toLowerCase().charCodeAt(0) - "a".charCodeAt(0);
         if ((targetGameIndex >= 0) && (targetGameIndex < gameNames.length)) {
             console.log("URL (" + location + ") Target (" + target + ") at index (" + targetGameIndex + ")");
             gameNames = [gameNames[targetGameIndex]];
@@ -22,11 +22,11 @@ function preInitGame(container) {
 
     // display a list...
     if (gameNames.length > 1) {
-        var gameList = document.createElement ("div");
+        let gameList = document.createElement ("div");
         gameList.className = "gameList";
         gameList.id = "gameList";
-        for (var i = 0; i < gameNames.length; ++i) {
-            var link = document.createElement ("div");
+        for (let i = 0; i < gameNames.length; ++i) {
+            let link = document.createElement ("div");
             link.innerHTML = gameNames[i];
             link.onclick = function () {
                 this.parentNode.parentNode.removeChild (this.parentNode);
@@ -34,7 +34,7 @@ function preInitGame(container) {
             };
             gameList.appendChild (link);
         }
-        var display = document.getElementById ("display");
+        let display = document.getElementById ("display");
         display.appendChild (gameList);
     } else {
         initGame(container.getGame (gameNames[0]));
@@ -48,8 +48,8 @@ function initGame(game) {
     // almost all of this is d3 crap that I want to get rid of and replace with
     // straight SVG...
 
-    var target = d3.select("#display");
-    var svg = target.append("svg").attr("class", "gameDisplay");
+    let target = d3.select("#display");
+    let svg = target.append("svg").attr("class", "gameDisplay");
 
     // add a background object so the base transform handler will always receive
     // the pan and zoom interactions
@@ -59,7 +59,7 @@ function initGame(game) {
         .attr("height", "100%");
 
     // create a child g element to receive the zoom/pan transformation
-    var child = svg.append("g").attr("class", "gameDisplay");
+    let child = svg.append("g").attr("class", "gameDisplay");
     svg.call(d3.behavior.zoom()
         .translate([0, 0])
         .scale(1.0)
@@ -77,7 +77,7 @@ function initGame(game) {
     );
 
     // add a block of text we'll use to display the frame rate
-    var fps = svg.append("text")
+    let fps = svg.append("text")
         .attr("x", 5)
         .attr("y", 20)
         .attr("font-family", "sans-serif")
@@ -88,8 +88,8 @@ function initGame(game) {
 
     // create a child g element to receive the universe transform (invert y and scale the view to [0..1, 0..1])
     svg = child.append("g").attr("class", "gameDisplay");
-    var xScale = target[0][0].clientWidth;
-    var yScale = target[0][0].clientHeight;
+    let xScale = target[0][0].clientWidth;
+    let yScale = target[0][0].clientHeight;
     scale = Math.min(xScale, yScale);
     svg.attr("transform", "translate(" + (xScale / 2.0) + "," + (yScale / 2.0) + ") scale(" + scale + "," + -scale + ")");
 
@@ -97,7 +97,7 @@ function initGame(game) {
     GameKeys.targetPt = Vector2d.xy(0, 1);
     svg.on("mousemove", function () {
         // extract the click location
-        var point = d3.mouse(this);
+        let point = d3.mouse(this);
         GameKeys.targetPt = Vector2d.a(point);
         mouse
             .attr("cx", GameKeys.targetPt.x)
@@ -118,9 +118,9 @@ function initGame(game) {
         .attr("fill-opacity", "0.5");
 
     // add a grid
-    var gridLines = [0.0];
-    var gridMin = -5.0;
-    var gridMax = 5.0;
+    let gridLines = [0.0];
+    let gridMin = -5.0;
+    let gridMax = 5.0;
 
     svg.selectAll(".xTicks")
         .data(gridLines)
@@ -143,7 +143,7 @@ function initGame(game) {
         .attr("stroke-width", 1 / scale);
 
     // add the mouse circle
-    var mouse = svg.append("circle")
+    let mouse = svg.append("circle")
         .attr("stroke-width", 2.0 / scale)
         .attr("fill", "green")
         .attr("fill-opacity", "1.0")
@@ -155,20 +155,20 @@ function initGame(game) {
     game.setup(svg);
 
     // track and average the frame rate over the last n frames
-    var frameCount = 30;
-    var frameTimes = Array.apply(null, new Array(frameCount)).map(Number.prototype.valueOf,0);
-    var frameIndex = 0;
-    var frameSum = 0;
-    var lastTime = new Date().valueOf ();
-    var gametimer = setInterval(function () {
+    let frameCount = 30;
+    let frameTimes = Array.apply(null, new Array(frameCount)).map(Number.prototype.valueOf,0);
+    let frameIndex = 0;
+    let frameSum = 0;
+    let lastTime = new Date().valueOf ();
+    let gametimer = setInterval(function () {
         // update the clock display
-        var nowTime = new Date().valueOf();
+        let nowTime = new Date().valueOf();
         frameSum -= frameTimes[frameIndex];
         frameTimes[frameIndex] = nowTime - lastTime;
         frameSum += frameTimes[frameIndex];
         frameIndex = (frameIndex + 1) % frameCount;
         lastTime = nowTime;
-        var frameRate = frameCount / (frameSum / 1000);
+        let frameRate = frameCount / (frameSum / 1000);
         fps.text(frameRate.toPrecision(5) + " fps");
 
         // play the game
