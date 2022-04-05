@@ -67,6 +67,7 @@ let Manager = function () {
         let averageError = 0;
         do {
             i++;
+            let k = 1 - Math.pow(1 - stiffness, 1 / i);
             let totalError = 0;
             constraints.forEach (function (constraint, index, array) {
                 let a = particles[constraint.a];
@@ -80,8 +81,8 @@ let Manager = function () {
                 // state information contained in the particles maintains basic laws, conservation of
                 // momentum, etc.
                 let totalMass = a.mass + b.mass;
-                a.position = a.position.add (delta.scale (stiffness * deltaLength * (a.mass / totalMass)));
-                b.position = b.position.add (delta.scale (-stiffness * deltaLength * (b.mass / totalMass)));
+                a.position = a.position.add (delta.scale (k * deltaLength * (a.mass / totalMass)));
+                b.position = b.position.add (delta.scale (-k * deltaLength * (b.mass / totalMass)));
             });
             averageError = totalError / constraints.length;
             //LOG("Iteration: " + i + ", Avg. Error: " + averageError.toFixed(5));

@@ -110,7 +110,7 @@ let Thing = function () {
             { "pt": Vector2d.xy(-0.05, -0.05), "radius": computeRadius(1.0) },
             { "pt": Vector2d.xy(0.10, 0.00), "radius": computeRadius(1.0) }
         ];
-        geometry.constraints = [[0, 1], [1, 2], [2, 3], [3, 0], [3, 1]];
+        geometry.constraints = [[0, 1], [1, 2], [2, 3], [3, 0], [3, 1], [0, 2]];
         geometry.computeXAxis = function (particles) {
             let midpoint = particles[0].position
                 .add(particles[2].position)
@@ -437,6 +437,7 @@ let Manager = function () {
         let averageError = 0;
         do {
             i++;
+            let k = 1 - Math.pow(1 - stiffness, 1 / i);
             let totalError = 0;
             constraints.forEach (function (constraint, index, array) {
                 let a = particles[constraint.a];
@@ -445,8 +446,8 @@ let Manager = function () {
                 let deltaLength = constraint.length - delta.normalize ();
                 totalError += Math.abs(deltaLength / constraint.length);
                 let totalMass = a.mass + b.mass;
-                a.position = a.position.add (delta.scale (stiffness * deltaLength * (a.mass / totalMass)));
-                b.position = b.position.add (delta.scale (-stiffness * deltaLength * (b.mass / totalMass)));
+                a.position = a.position.add (delta.scale (k * deltaLength * (a.mass / totalMass)));
+                b.position = b.position.add (delta.scale (-k * deltaLength * (b.mass / totalMass)));
             });
             averageError = totalError / constraints.length;
         } while ((i < maxIterations) && (averageError > maxConstraintError));

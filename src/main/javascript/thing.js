@@ -18,7 +18,7 @@ let Thing = function () {
             { "pt": Vector2d.xy(-0.05, -0.05), "radius": computeRadius(1.0) },
             { "pt": Vector2d.xy(0.10, 0.00), "radius": computeRadius(1.0) }
         ];
-        geometry.constraints = [[0, 1], [1, 2], [2, 3], [3, 0], [3, 1]];
+        geometry.constraints = [[0, 1], [1, 2], [2, 3], [3, 0], [3, 1], [0, 2]];
 
         geometry.computeXAxis = function (particles) {
             // the frame of reference is computed as the line between [0,2] and
